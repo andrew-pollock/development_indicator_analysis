@@ -8,10 +8,10 @@ library(ggplot2)
 #### DATA PREPARATION ####
 
 # Load the data from the excel file
-raw_data       <- read_xls("API_21_DS2_en_excel_v2.xls", sheet = 1, skip = 3)  
-country_data   <- read_xls("API_21_DS2_en_excel_v2.xls", sheet = 2)
-extra_data     <- read.csv("extra_country_data.csv", stringsAsFactors = FALSE, na.strings = "")
-indicator_data <- read_xls("API_21_DS2_en_excel_v2.xls", sheet = 3)
+raw_data       <- read_xls("data/API_21_DS2_en_excel_v2.xls", sheet = 1, skip = 3)  
+country_data   <- read_xls("data/API_21_DS2_en_excel_v2.xls", sheet = 2)
+extra_data     <- read.csv("data/extra_country_data.csv", stringsAsFactors = FALSE, na.strings = "")
+indicator_data <- read_xls("data/API_21_DS2_en_excel_v2.xls", sheet = 3)
 
 # Clean up the column names
 names(raw_data)       <- tolower(gsub("\\s", "_", names(raw_data)))
@@ -137,6 +137,6 @@ dashboard_data <- long_data %>% filter(year >= 1975, year <= 2014) %>% left_join
   select(country_name, country_code, region, year, indicator_name, value)
 
 
-write.csv(dashboard_data, file = "dashboard_data.csv", row.names = FALSE)
+write.csv(dashboard_data, file = "data/dashboard_data.csv", row.names = FALSE)
 
 
