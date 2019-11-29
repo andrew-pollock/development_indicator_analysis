@@ -21,6 +21,7 @@ names(indicator_data) <- tolower(gsub("\\s", "_", names(indicator_data)))
 
 # Combining country data into a single table
 country_data <- left_join(country_data, extra_data[, -2], by = "country_code", all.x = TRUE)
+raw_data[raw_data$country_name == "Korea, Rep.",1] <- "South Korea"
 rm(extra_data)
 
 # Check if any of the existing countries don't appear in the extra_data table
@@ -54,16 +55,14 @@ long_data <- long_data %>% filter(year != "2016", !(country_code %in% c("CHI", "
 
 # Counting countries in each region
 country_data %>% filter(income_group == "High income") %>% group_by(region) %>% summarise(num_countries = n()) %>% arrange(-num_countries) %>% View()
-# Sub Saharan Africa only has 1 country so we'll exclude it
+# Sub Saharan Africa only has 1 high income country so we'll exclude it
 
 # Removing Sub-Saharan Africa, Channel Islands and Kosovo
 country_data <- country_data %>% filter(income_group == "High income", region != "Sub-Saharan Africa", !(country_code %in% c("CHI", "KSV")))
 
 
 # Lets compare countries by Region & Continent
-country_data %>% group_by(region, continent) %>% summarise(num_countries = n()) %>% arrange(region) #%>% View()
-
-country_data %>% select(country_name, region, continent) %>% arrange(region, continent) #%>% View()
+country_data %>% select(country_name, region, continent) %>% arrange(region, continent) %>% View()
 # Within East Asia & Pacific we'll look a AS
 # Within Europe & Central Asia we'll look at EU
 # Within Latin America & Caribbean we'll look at NA
@@ -78,122 +77,67 @@ country_data <- country_data %>% filter((region == "East Asia & Pacific" & conti
                                         (region == "North America"))
 
 
-# Selecting a subset of countries from each region
-raw_subset <- country_data %>% select(country_code, region, area_in_km, population) %>%
-                left_join(long_data, by = "country_code", all.x=TRUE)
+# Selecting the 2 most populous countries from each region
+country_filter <- country_data %>% select(region, country_code, population) %>% arrange(region, -population) %>% 
+  group_by(region) %>% slice(1:2) %>% ungroup() %>% select(country_code)
 
 
-# Comparing countries by: missing_prec, populaton, area
-raw_subset %>% group_by(country_name, region, area_in_km, population) %>% summarise(perc_missing = sum(is.na(value))/n()) %>% arrange(region, perc_missing) %>% View()
+long_data <- long_data %>% filter(country_code %in% country_filter$country_code)
 
-# Removing countries that are very small or have a small population
-raw_subset2 <- raw_subset %>% filter(population > 100000, area_in_km > 1000)
 
-raw_subset2 %>% group_by(country_name, region, area_in_km, population) %>% summarise(perc_missing = sum(is.na(value))/n()) %>% arrange(region, perc_missing) %>% View()
 
-# normalise area and population within each group
-region_avgs <- raw_subset2 %>% select(country_code, region, population, area_in_km) %>% distinct %>% group_by(region) %>% 
-    summarise(min_pop = min(population), 
-              range_pop = max(population) - min(population),
-              min_size = min(area_in_km),
-              range_size = max(area_in_km) - min(area_in_km))
+#### SELECTING INDICATORS ####
+indicator_selection <- long_data %>% select(indicator_name, year, value)
 
-region_avgs <- raw_subset2 %>% select(country_code, region, population, area_in_km) %>% distinct %>% group_by(region) %>% 
-  summarise(pop_mean = mean(population), 
-            pop_sd = sd(population),
-            size_mean = mean(area_in_km),
-            size_sd = sd(area_in_km))
+# Remove any indicators with more than 40% of data points missing
+indicator_selection <- indicator_selection %>% group_by(indicator_name) %>% summarise(percent_missing = sum(is.na(value))/n()) %>% 
+  arrange(-percent_missing) %>% filter(percent_missing < 0.4) %>% 
+  select(indicator_name) %>% left_join(indicator_selection, by = "indicator_name")
 
 
+# Visually inspect remaining indicators
+indicator_selection %>% group_by( year) %>% summarise(percent_missing = sum(is.na(value))/n())  %>% filter(year != "2015") %>% 
+  ggplot(aes(x=as.integer(year), y = percent_missing)) +
+  geom_line()
 
-raw_subset2 <- left_join(raw_subset2, region_avgs, by = "region")
+# Data availability for our chosen countries improve significantly after 1975
+indicator_selection %>% filter(year > 1975) %>% group_by(indicator_name)  %>% summarise(percent_missing = sum(is.na(value))/n()) %>% View()
 
 
-normalised_data <- raw_subset2 %>% mutate(norm_area = abs((area_in_km-size_mean)/size_sd),
-                       norm_pop = abs((population-pop_mean)/pop_sd),
-                       total_norm = norm_area+norm_pop) %>% select(country_code, norm_area, norm_pop, total_norm) %>% distinct()
+# We'll use the below 15 indicators to compare our chosen countries
+indicators <- c('Arms imports (SIPRI trend indicator values)',
+  'Energy imports, net (% of energy use)',
+  'Exports of goods and services (% of GDP)',
+  'Exports of goods and services (annual % growth)',
+  'Food exports (% of merchandise exports)',
+  'Food imports (% of merchandise imports)',
+  'Fuel imports (% of merchandise imports)',
+  'Imports of goods and services (% of GDP)',
+  'Imports of goods and services (annual % growth)',
+  'Merchandise exports (current US$)',
+  'Merchandise exports to high-income economies (% of total merchandise exports)',
+  'Merchandise imports (current US$)',
+  'Merchandise imports from high-income economies (% of total merchandise imports)',
+  'Merchandise trade (% of GDP)',
+  'Trade (% of GDP)')
 
-country_data2 <- left_join(country_data, normalised_data, by = "country_code")
-# Most representative countries in each region, based on size and population
-country_data2 %>% group_by(region) %>% arrange(total_norm) %>% slice(1:2)
 
+long_data <- long_data %>% filter(indicator_name %in% indicators)
 
-raw_subset2 %>% group_by(year) %>% summarise(num_missing = sum(is.na(value)), perc_missing = num_missing/n()) %>% arrange(-perc_missing) %>% 
-  ggplot(aes(x=as.integer(year), y = perc_missing)) + 
-  geom_line() + lims(y = c(0,1))
 
+#### SELECTING A TIME FRAME ####
 
+# What period of time should we consider?
+indicator_selection %>% group_by(year) %>% summarise(percent_missing = sum(is.na(value))/n()) %>% 
+  ggplot(aes(x=as.integer(year), y=percent_missing)) + 
+  geom_line() + theme_bw() + ylim(0,1)
+# data availability improves in the early 1970s, starts getting worse in 2014 and is poor in 2015
 
+# To allow for the most stable period for comparisons we'll look at 1975 until 2013
+dashboard_data <- long_data %>% filter(year >= 1975, year <= 2013) %>% left_join(select(country_data, country_code, region), by = "country_code") %>%
+  select(country_name, country_code, region, year, indicator_name, value)
 
 
-
-
-
-
-
-# Which indicators 
-
-
-# Which countries should we choose?
-
-# Counting number of countries in each region
-
-
-###  In order to make countries more comparable, we'll focus on high income countries from different regions
-# Sub saharan africa only has 1 high income country (Seychelles, a series of small islands with low population), so we'll exclude it
-country_data %>% filter(!is.na(region), region != "Sub-Saharan Africa", income_group == "High income") %>% select(region, country_name) %>%  arrange(region) %>% View()
-
-
-
-
-
-country_data %>% filter(!is.na(region),  income_group == "High income") %>% select(region, country_name) %>% distinct() %>% group_by(region) %>% summarise(num_countries = n()) %>% View()
-
-
-country_data %>% filter(!is.na(region),  income_group == "High income") %>% View()
-
-
-?read.csv
-
-###  In order to make countries more comparable, we'll focus on high income countries from different regions
-# Sub saharan africa only has 1 high income country (Seychelles, a series of small islands with low population), so we'll exclude it
-country_data %>% filter(!is.na(region), region != "Sub-Saharan Africa", income_group == "High income") %>% select(region, country_name) %>%  arrange(region) %>% View()
-
-# To simplify the analysis further, we'll pick comparable countries from each region (i.e 2 European countries from Europe & Central Asia, )
-
-
-## Number of missing rows by country
-countries_to_consider <- country_data %>% filter(!is.na(region), region != "Sub-Saharan Africa",  income_group == "High income") %>% select(country_code, region, country_name)
-missing_data <- long_data %>% group_by(country_code) %>% summarise(percent_missing = sum(is.na(value))/n())
-
-countries_to_consider <- left_join(countries_to_consider, missing_data, by = "country_code", allx. = TRUE) %>% arrange(percent_missing)
-
-countries_to_consider %>% group_by(region) %>% slice(1:5) %>% View()
-
-
-
-
-country_data %>% group_by(region, continent) %>% summarise(n()) %>% View()
-
-
-country_data %>% filter(is.na(continent), !is.na(region))  # %>% View()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+write.csv(dashboard_data, file = "dashboard_data.csv", row.names = FALSE)
 
 
