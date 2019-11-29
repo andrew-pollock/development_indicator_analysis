@@ -58,7 +58,7 @@ country_data %>% filter(income_group == "High income") %>% group_by(region) %>% 
 # Sub Saharan Africa only has 1 high income country so we'll exclude it
 
 # Removing Sub-Saharan Africa, Channel Islands and Kosovo
-country_data <- country_data %>% filter(income_group == "High income", region != "Sub-Saharan Africa", !(country_code %in% c("CHI", "KSV")))
+country_data <- country_data %>% filter(country_code == "WLD" | (income_group == "High income" & region != "Sub-Saharan Africa" & !(country_code %in% c("CHI", "KSV"))))
 
 
 # Lets compare countries by Region & Continent
@@ -72,7 +72,8 @@ country_data %>% select(country_name, region, continent) %>% arrange(region, con
 country_data <- country_data %>% filter((region == "East Asia & Pacific" & continent == "AS") | 
                                         (region == "Europe & Central Asia" & continent == "EU") |
                                         (region == "Middle East & North Africa" & continent == "AS") | 
-                                        (region == "North America"))
+                                        (region == "North America") |
+                                        (country_code == "WLD"))
 
 
 # Selecting the 2 most populous countries from each region
