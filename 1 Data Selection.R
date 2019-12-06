@@ -27,6 +27,7 @@ rm(extra_data)
 # Check if any of the existing countries don't appear in the extra_data table
 country_data %>% filter(is.na(continent), !is.na(region))
 # Only 2 small countries are impacted so we'll exclude them from our analysis
+country_data <- country_data %>% filter(!(country_code %in% c("CHI", "KSV")))
 
 
 #### DATA EXPLORATION ####
@@ -44,35 +45,35 @@ long_data %>% group_by(year) %>% summarise(num_missing = sum(is.na(value)), perc
   ggplot(aes(x=as.integer(year), y = perc_missing)) + 
   geom_line() + lims(y = c(0,1)) + theme_bw()
 # 2016 data is almost completely missing & 77% is missing from 2015, otherwise data availability slowly improves from 19060 onwards
+# We'll look at the date range from 1980 until 2014 to ensure we have the best data availability possible
 
 
 # Dropping 2016, Channel Islands and Kosovo from the data
-long_data <- long_data %>% filter(year != "2016", !(country_code %in% c("CHI", "KSV")))
+long_data <- long_data %>% filter(year <= 2014, year >= 1980, !(country_code %in% c("CHI", "KSV")))
 
 
 #### SELECTING COUNTRIES ####
-# We'll focus on high income countries to simplify our comparisons
+# We're only interested in countries with are current high income countries
+
+# Filtering down to the 3 regions we're interested in (EU, NA & East Asia)
+country_data <- country_data %>% filter(country_code == "WLD" | 
+                                        (income_group == "High income" & region  %in% c("East Asia & Pacific", 
+                                                                                        "Europe & Central Asia",
+                                                                                        "North America"))) %>%
+                                mutate(region = case_when(country_code == "WLD" ~ "World", TRUE ~ region))
 
 # Counting countries in each region
-country_data %>% filter(income_group == "High income") %>% group_by(region) %>% summarise(num_countries = n()) %>% arrange(-num_countries) %>% View()
-# Sub Saharan Africa only has 1 high income country so we'll exclude it
-
-# Removing Sub-Saharan Africa, Channel Islands and Kosovo
-country_data <- country_data %>% filter(country_code == "WLD" | (income_group == "High income" & region != "Sub-Saharan Africa" & !(country_code %in% c("CHI", "KSV"))))
+country_data %>% group_by(region) %>% summarise(num_countries = n()) %>% arrange(-num_countries)
 
 
 # Lets compare countries by Region & Continent
 country_data %>% select(country_name, region, continent) %>% arrange(region, continent) %>% View()
-# Within East Asia & Pacific we'll look a AS
-# Within Europe & Central Asia we'll look at EU
-# Within Middle East & North Africa we'll look at AS
-# All North America is contained within NA
+# We want to   filter to just the Asian countries in East Asia & Pacific (i.e excluding Aus and New Zealand)
 
-# Filtereing down to one continent per region
+# Filtering down to one continent per region
 country_data <- country_data %>% filter((region == "East Asia & Pacific" & continent == "AS") | 
                                         (region == "Europe & Central Asia" & continent == "EU") |
-                                        (region == "Middle East & North Africa" & continent == "AS") | 
-                                        (region == "North America") |
+                                        (region == "North America" & continent == "NA") |
                                         (country_code == "WLD"))
 
 
