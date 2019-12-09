@@ -96,7 +96,7 @@ indicator_selection <- indicator_selection %>% group_by(indicator_name) %>% summ
 
 
 # Visually inspect remaining indicators
-indicator_selection %>% group_by( year) %>% summarise(percent_missing = sum(is.na(value))/n())  %>% filter(year != "2015") %>% 
+indicator_selection %>% group_by(year) %>% summarise(percent_missing = sum(is.na(value))/n())  %>% filter(year != "2015") %>% 
   ggplot(aes(x=as.integer(year), y = percent_missing)) +
   geom_line() + theme_bw() + ylim(0,1)
 
@@ -120,21 +120,24 @@ indicators <- c('Exports of goods and services (% of GDP)',
                 'Manufactures imports (% of merchandise imports)',
                 'Merchandise trade (% of GDP)',
                 'Trade (% of GDP)')
-
+# These are all availabile for our chose countries from 1980 onwards
 
 long_data <- long_data %>% filter(indicator_name %in% indicators)
 
 
 #### SELECTING A TIME FRAME ####
 
-# What period of time should we consider?
-indicator_selection %>% group_by(year) %>% summarise(percent_missing = sum(is.na(value))/n()) %>%
+# Can we look earlier than 1980 but maintain good availability of data?
+final_data <- raw_data %>% gather(key = "year", value="value", -country_name, -country_code, -indicator_name, -indicator_code) %>% filter(indicator_name %in% indicators) %>% 
+  filter(country_code %in% country_filter$country_code)
+
+final_data %>% group_by(year) %>% summarise(percent_missing = sum(is.na(value))/n()) %>%
   ggplot(aes(x=as.integer(year), y=percent_missing)) + 
   geom_line() + theme_bw() + ylim(0,1)
-# data availability improves rapidly up to the mid-1970s but is poor again in 2015
+# Our chosen data is fully available from 1970 up until 2014
 
 # To allow for the most stable period for comparisons we'll look at 1975 until 2014
-dashboard_data <- long_data %>% filter(year >= 1975, year <= 2014) %>% left_join(select(country_data, country_code, region), by = "country_code") %>%
+dashboard_data <- final_data %>% filter(year >= 1970, year <= 2014) %>% left_join(select(country_data, country_code, region), by = "country_code") %>%
   select(country_name, country_code, region, year, indicator_name, value)
 
 
