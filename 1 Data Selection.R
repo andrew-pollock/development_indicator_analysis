@@ -100,27 +100,26 @@ indicator_selection %>% group_by( year) %>% summarise(percent_missing = sum(is.n
   ggplot(aes(x=as.integer(year), y = percent_missing)) +
   geom_line() + theme_bw() + ylim(0,1)
 
-# Data availability for our chosen countries improve significantly after 1975
-indicator_selection %>% filter(year > 1975) %>% group_by(indicator_name)  %>% summarise(percent_missing = sum(is.na(value))/n()) %>% View()
+indicator_selection %>% group_by(indicator_name) %>% summarise(percent_missing = sum(is.na(value))/n()) %>% View()
 
 
 # We'll use the below 15 indicators to compare our chosen countries
-indicators <- c('Arms imports (SIPRI trend indicator values)',
-  'Energy imports, net (% of energy use)',
-  'Exports of goods and services (% of GDP)',
-  'Food exports (% of merchandise exports)',
-  'Food imports (% of merchandise imports)',
-  'Fuel exports (% of merchandise exports)',
-  'Fuel imports (% of merchandise imports)',
-  'Imports of goods and services (% of GDP)',
-  'Merchandise exports (current US$)',
-  'Merchandise exports to high-income economies (% of total merchandise exports)',
-  'Merchandise imports (current US$)',
-  'Merchandise imports from high-income economies (% of total merchandise imports)',
-  'Merchandise trade (% of GDP)',
-  'Ores and metals exports (% of merchandise exports)',
-  'Ores and metals imports (% of merchandise imports)',
-  'Trade (% of GDP)')
+indicators <- c('Exports of goods and services (% of GDP)',
+                'Imports of goods and services (% of GDP)',
+                'Exports of goods and services (current US$)',
+                'Imports of goods and services (current US$)',
+                'Food exports (% of merchandise exports)',
+                'Food imports (% of merchandise imports)',
+                'Fuel exports (% of merchandise exports)',
+                'Fuel imports (% of merchandise imports)',
+                'Merchandise exports (current US$)',
+                'Merchandise imports (current US$)',
+                'Ores and metals exports (% of merchandise exports)',
+                'Ores and metals imports (% of merchandise imports)',
+                'Manufactures exports (% of merchandise exports)',
+                'Manufactures imports (% of merchandise imports)',
+                'Merchandise trade (% of GDP)',
+                'Trade (% of GDP)')
 
 
 long_data <- long_data %>% filter(indicator_name %in% indicators)
