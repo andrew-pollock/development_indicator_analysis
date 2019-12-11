@@ -106,14 +106,12 @@ indicator_selection %>% group_by(indicator_name) %>% summarise(percent_missing =
 # We'll use the below 15 indicators to compare our chosen countries
 indicators <- c('Exports of goods and services (% of GDP)',
                 'Imports of goods and services (% of GDP)',
-                'Exports of goods and services (current US$)',
-                'Imports of goods and services (current US$)',
                 'Food exports (% of merchandise exports)',
                 'Food imports (% of merchandise imports)',
                 'Fuel exports (% of merchandise exports)',
                 'Fuel imports (% of merchandise imports)',
-                'Merchandise exports (current US$)',
-                'Merchandise imports (current US$)',
+                'Agricultural raw materials exports (% of merchandise exports)',
+                'Agricultural raw materials imports (% of merchandise imports)',
                 'Ores and metals exports (% of merchandise exports)',
                 'Ores and metals imports (% of merchandise imports)',
                 'Manufactures exports (% of merchandise exports)',
@@ -138,7 +136,7 @@ final_data %>% group_by(year) %>% summarise(percent_missing = sum(is.na(value))/
 
 # To allow for the most stable period for comparisons we'll look at 1975 until 2014
 dashboard_data <- final_data %>% filter(year >= 1970, year <= 2014) %>% left_join(select(country_data, country_code, region), by = "country_code") %>%
-  select(country_name, country_code, region, year, indicator_name, value)
+  select(country_name, country_code, region, year, indicator_name, value) %>% mutate(value = round(value/100,4))
 
 
 write.csv(dashboard_data, file = "data/dashboard_data.csv", row.names = FALSE)
