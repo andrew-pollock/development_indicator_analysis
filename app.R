@@ -71,9 +71,10 @@ server <- function(input, output) {
       xlim(min(input$num), max(input$num)) +
       # theme_bw() +
       theme_classic() +
-      theme(legend.position= if(input$include_world) "bottom" else "none") +
-      stat_smooth(method="lm", se = input$include_se, fullrange=TRUE, color = "black")
-      # geom_smooth(se = input$include_se)
+      theme(legend.key.size = unit(1, 'cm')) +
+      stat_smooth(method="lm", se = input$include_se, fullrange=TRUE) + #, color = "black")
+      scale_linetype_discrete(name = "Country", guide = if(!input$include_world) 'none' else "legend") +
+      scale_color_discrete(name = "Economic Indicators", guide = if(length(input$filter_indicator) == 1) 'none' else "legend")
     
   },height = 400,width = 600)
   
