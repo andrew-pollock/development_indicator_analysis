@@ -23,11 +23,11 @@ ui <- dashboardPage(
       # First tab content
       tabItem(tabName = "dashboard",
               fluidRow(
-                box(plotOutput("plot1", height = 400,width = 600)),
+                box(plotOutput("plot1", height = 600, width = "100%")),
                 
                 box(
                   sidebarPanel( 
-                    sliderInput("num", "Years to Include:",min = 1980, max = 2019,step=1,value=c(1980,2014), width = 600), width = 12)
+                    sliderInput("num", "Years to Include:",min = 1970, max = 2019,step=1,value=c(1970,2014), width = 600), width = 12)
                   
                 ),
                 box(
@@ -71,12 +71,13 @@ server <- function(input, output) {
       xlim(min(input$num), max(input$num)) +
       # theme_bw() +
       theme_classic() +
+      scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
       theme(legend.key.size = unit(1, 'cm')) +
       stat_smooth(method="lm", se = input$include_se, fullrange=TRUE) + #, color = "black")
       scale_linetype_discrete(name = "Country", guide = if(!input$include_world) 'none' else "legend") +
       scale_color_discrete(name = "Economic Indicators", guide = if(length(input$filter_indicator) == 1) 'none' else "legend")
     
-  },height = 400,width = 600)
+  },width = "auto")
   
   
   
