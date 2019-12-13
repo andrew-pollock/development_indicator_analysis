@@ -4,9 +4,25 @@ if(!require("shinydashboard")) install.packages('shinydashboard')
 
 library(shiny)
 library(shinydashboard)
+library(dplyr)
+library(tidyr)
 library(ggplot2)
 
 dashboard_data <- read.csv("data/dashboard_data.csv")
+indicator_data <- read.csv("data/indicator_data.csv", stringsAsFactors = FALSE)
+
+import_export_data <- select(dashboard_data, -country_code)
+import_export_data <- left_join(import_export_data, indicator_data, by = "indicator_name")
+
+
+import_export_data <- import_export_data %>% group_by(country_name, region, metric, year) %>% filter(!is.na(metric)) %>% 
+  summarise(Merch_Imports = sum(case_when(scale == "merch_imports" ~ value, TRUE ~ 0)),
+            Merch_Exports = sum(case_when(scale == "merch_exports" ~ value, TRUE ~ 0)))
+
+import_export_data$country_name <- as.factor(import_export_data$country_name)
+import_export_data$region <- as.factor(import_export_data$region)
+import_export_data$metric <- as.factor(import_export_data$metric)
+
 
 ui <- dashboardPage(
   
@@ -43,7 +59,23 @@ ui <- dashboardPage(
       ),
       # Second tab content
       tabItem(tabName = "widgets",
-              h2("Widgets tab content")
+              fluidRow(
+                box(plotOutput("plot2", height = 600, width = "100%")),
+                box(plotOutput("plot3", height = 600, width = "100%")),
+                box(
+                  sidebarPanel( 
+                    sliderInput("num2", "Years to Include:",min = 1970, max = 2019,step=1,value=c(1970,2014), width = 600), width = 12)
+                  
+                ),
+                box(
+                  selectInput("filter_country2", "Country", 
+                              choices=levels(import_export_data$country_name),
+                              selected=levels(import_export_data$country_name)[1]),
+                  selectInput("filter_indicator2", "Indicator", 
+                              choices=levels(import_export_data$metric),
+                              selected=levels(import_export_data$metric)[1], multiple = FALSE))
+                
+              )
       )
     )
   )
@@ -79,7 +111,35 @@ server <- function(input, output) {
     
   },width = "auto")
   
+  dat2 <- reactive({
+    test2 <- import_export_data[import_export_data$year %in% seq(from=min(input$num2),to=max(input$num2),by=1) & 
+                                  import_export_data$country_name == input$filter_country2 &
+                                  import_export_data$metric == input$filter_indicator2,]
+  })
   
+  output$plot2 <- renderPlot({
+    
+    ggplot(dat2(),aes(x=as.numeric(year),y=Merch_Imports)) + 
+      geom_line() + 
+      ylab(paste0(input$filter_indicator2, " as % of Merchandise Imports")) +
+      xlab("Year") +
+      xlim(min(input$num2), max(input$num2)) +
+      theme_classic() +
+      scale_y_continuous(labels = scales::percent_format(accuracy = 1))
+    
+  },width = "auto")
+  
+  output$plot3 <- renderPlot({
+    
+    ggplot(dat2(),aes(x=as.numeric(year),y=Merch_Exports)) + 
+      geom_line() + 
+      ylab(paste0(input$filter_indicator2, " as % of Merchandise Exports")) +
+      xlab("Year") +
+      xlim(min(input$num2), max(input$num2)) +
+      theme_classic() +
+      scale_y_continuous(labels = scales::percent_format(accuracy = 1))
+    
+  },width = "auto")
   
 }
 

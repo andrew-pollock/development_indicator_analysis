@@ -1,0 +1,11 @@
+indicator_name,metric,scale
+Agricultural raw materials imports (% of merchandise imports),Agricultural raw materials,merch_imports
+Food imports (% of merchandise imports),Food,merch_imports
+Fuel imports (% of merchandise imports),Fuel,merch_imports
+Manufactures imports (% of merchandise imports),Manufacturing,merch_imports
+Ores and metals imports (% of merchandise imports),Ores and metals,merch_imports
+Agricultural raw materials exports (% of merchandise exports),Agricultural raw materials,merch_exports
+Food exports (% of merchandise exports),Food,merch_exports
+Fuel exports (% of merchandise exports),Fuel,merch_exports
+Manufactures exports (% of merchandise exports),Manufacturing,merch_exports
+Ores and metals exports (% of merchandise exports),Ores and metals,merch_exports
