@@ -117,7 +117,8 @@ indicators <- c('Exports of goods and services (% of GDP)',
                 'Manufactures exports (% of merchandise exports)',
                 'Manufactures imports (% of merchandise imports)',
                 'Merchandise trade (% of GDP)',
-                'Trade (% of GDP)')
+                'Merchandise exports (current US$)',
+                'Merchandise imports (current US$)')
 # These are all availabile for our chose countries from 1980 onwards
 
 long_data <- long_data %>% filter(indicator_name %in% indicators)
@@ -136,7 +137,10 @@ final_data %>% group_by(year) %>% summarise(percent_missing = sum(is.na(value))/
 
 # To allow for the most stable period for comparisons we'll look at 1975 until 2014
 dashboard_data <- final_data %>% filter(year >= 1970, year <= 2014) %>% left_join(select(country_data, country_code, region), by = "country_code") %>%
-  select(country_name, country_code, region, year, indicator_name, value) %>% mutate(value = round(value/100,4))
+  select(country_name, country_code, region, year, indicator_name, value) %>% 
+  mutate(value = case_when(indicator_name %in% c('Merchandise exports (current US$)',
+                                                 'Merchandise imports (current US$)') ~ value,
+                           TRUE ~ round(value/100,4)))
 
 
 write.csv(dashboard_data, file = "data/dashboard_data.csv", row.names = FALSE)
