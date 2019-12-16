@@ -15,15 +15,17 @@ import_export_data <- select(dashboard_data, -country_code)
 import_export_data <- left_join(import_export_data, indicator_data, by = "indicator_name")
 
 
-import_export_data <- import_export_data %>% group_by(country_name, region, metric, year) %>% filter(!is.na(metric)) %>% 
-  summarise(Merch_Imports = sum(case_when(scale == "merch_imports" ~ value, TRUE ~ 0)),
-            Merch_Exports = sum(case_when(scale == "merch_exports" ~ value, TRUE ~ 0)))
+# import_export_data <- import_export_data %>% group_by(country_name, region, metric, year) %>% filter(!is.na(metric)) %>% 
+#   summarise(Merch_Imports = sum(case_when(scale == "merch_imports" ~ value, TRUE ~ 0)),
+#             Merch_Exports = sum(case_when(scale == "merch_exports" ~ value, TRUE ~ 0)))
 
-merch_usd_data <- import_export_data %>% filter(metric == "Merchandise") %>% 
-  rename(`Merchandise Imports` = Merch_Imports, `Merchandise Exports` = Merch_Exports) %>%
-  gather(key = "key", value = "value", `Merchandise Imports`, `Merchandise Exports`)
+import_export_data <- import_export_data %>% 
+  mutate(scale = case_when(scale == "merch_imports" ~ "Merchandise Imports", TRUE ~ "Merchandise Exports"))
+
+merch_usd_data <- import_export_data %>% filter(metric == "Merchandise") 
 
 import_export_data$country_name <- as.factor(import_export_data$country_name)
+import_export_data$indicator_name <- as.factor(import_export_data$indicator_name)
 import_export_data$region <- as.factor(import_export_data$region)
 import_export_data$metric <- as.factor(import_export_data$metric)
 
@@ -34,6 +36,7 @@ ui <- dashboardPage(
                   titleWidth = 280),
   
   dashboardSidebar(sidebarMenu(
+    menuItem("Country Dashboard", tabName = "country_dashboard", icon = icon("dashboard")),
     menuItem("Country Deepdive", tabName = "dashboard", icon = icon("dashboard")),
     menuItem("Country Comparison", tabName = "widgets", icon = icon("poll")),
     menuItem("Import Export Bar", tabName = "Imports", icon = icon("poll"))
@@ -85,14 +88,33 @@ ui <- dashboardPage(
       # Third tab content
       tabItem(tabName = "Imports",
               fluidRow(
-                box(plotOutput("plot4", height = 600, width = "100%")),
+                box(plotOutput("plot4", height = 600, width = "100%"), width = 8),
                 box(sidebarPanel( 
-                    sliderInput("filter_year3", "Year",min = 1970, max = 2014,step=1,value=2014, width = 600), width = 12)
+                    sliderInput("filter_year3", "Year",min = 1970, max = 2014,step=1,value=2014, width = 600), width = "100%"), width = 4
                   
                 )
                 
               )
+      ),
+      tabItem(tabName = "country_dashboard",
+              fluidRow(
+                box(plotOutput("plot8", height = 450, width = "100%")), ## Top left
+                box(plotOutput("plot9", height = 450, width = "100%")), ## Top Right  (this will be the map)
+                
+                box( ## Bottom Left
+                  sidebarPanel( 
+                    sliderInput("num3", "Years to Include:",min = 1970, max = 2019,step=1,value=c(1970,2014), width = 600), width = 12),
+                  selectInput("filter_country3", "Country", 
+                              choices=levels(import_export_data$country_name),
+                              selected=levels(import_export_data$country_name)[1]),
+                  selectInput("filter_indicator3", "Indicator", 
+                              choices=levels(import_export_data$indicator_name),
+                              selected=levels(import_export_data$indicator_name)[1], multiple = FALSE)),
+                box(plotOutput("plot7", height = 450, width = "100%")) ## Bottom right
+              )
       )
+      
+      
     )
   )
   
@@ -170,11 +192,57 @@ server <- function(input, output) {
       ggtitle(paste0("Merchandise Imports & Exports in ", input$filter_year3)) +
       theme_classic() +
       xlab("Country") +
+      facet_wrap(~region, scales = "free_x") +
       ylab("Current US Dollars (in Billions)") +
       scale_y_continuous(labels = scales::dollar_format(prefix="$", suffix = "B")) +
       theme(legend.justification = "centre", legend.position = "top", plot.title = element_text(hjust = 0.5), legend.title = element_blank())
     
   },width = "auto")
+  
+  
+  dat8 <- reactive({
+    metric <- import_export_data[import_export_data$indicator_name == input$filter_indicator3, 6][1]
+    
+    test <- import_export_data[import_export_data$year %in% seq(from=min(input$num3),to=max(input$num3),by=1) &
+                                 import_export_data$country_name == input$filter_country3 &
+                                 import_export_data$metric == metric &
+                                 !is.na(import_export_data$metric),]
+  })
+  
+  
+  output$plot8 <- renderPlot({
+    
+    ggplot(dat8(),aes(x=as.numeric(year),y=value)) +
+      geom_line() +
+      ylab(" as % of Merchandise Imports/Exports") +
+      xlab("Year") +
+      xlim(min(input$num3), max(input$num3)) +
+      theme_classic() +
+      facet_wrap(~scale, scales = "free_y") +
+      scale_y_continuous(labels = scales::percent_format(accuracy = 1))
+    
+  },width = "auto")
+  
+  
+  dat9 <- reactive({
+    test3 <- merch_usd_data[merch_usd_data$year == max(input$num3),]
+  })
+  
+  output$plot7 <- renderPlot({
+    
+    dat3() %>% filter(country_name != "World") %>% mutate(value = value/1000000000) %>% 
+      ggplot(aes(x=country_name, y=value, fill = scale)) +
+      geom_bar(stat ="identity", position=position_dodge()) +
+      ggtitle(paste0("Total Merchandise Imports & Exports in ", max(input$num3))) +
+      theme_classic() +
+      xlab("Country") +
+      facet_wrap(~region, scales = "free_x") +
+      ylab("Current US Dollars (in Billions)") +
+      scale_y_continuous(labels = scales::dollar_format(prefix="$", suffix = "B")) +
+      theme(legend.justification = "centre", legend.position = "top", plot.title = element_text(hjust = 0.5), legend.title = element_blank())
+    
+  },width = "auto")
+  
   
   
 }
