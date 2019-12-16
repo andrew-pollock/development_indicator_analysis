@@ -121,7 +121,7 @@ server <- function(input, output) {
   import_export_plot_data <- reactive({
     metric <- import_export_data[import_export_data$indicator_name == input$filter_indicator3, 6][1]
     
-    test <- import_export_data[import_export_data$year %in% seq(from=min(input$num3),to=max(input$num3),by=1) &
+    output_data <- import_export_data[import_export_data$year %in% seq(from=min(input$num3),to=max(input$num3),by=1) &
                                  import_export_data$country_name == input$filter_country3 &
                                  import_export_data$metric == metric &
                                  !is.na(import_export_data$metric),]
@@ -143,7 +143,7 @@ server <- function(input, output) {
   # Map plot goes here
   
   import_export_bar_data <- reactive({
-    test3 <- merch_usd_data[merch_usd_data$year == max(input$num3),]
+    output_data <- merch_usd_data[merch_usd_data$year == max(input$num3),]
   })
   
   output$import_export_bar <- renderPlot({
@@ -165,9 +165,9 @@ server <- function(input, output) {
   #### Second Tab Plots ####
   
   multi_ind_plot_data <- reactive({
-    test <- dashboard_data[dashboard_data$year %in% seq(from=min(input$num),to=max(input$num),by=1) & 
+    output_data <- dashboard_data[dashboard_data$year %in% seq(from=min(input$num),to=max(input$num),by=1) & 
                              (dashboard_data$country_name == input$filter_country | (dashboard_data$country_name == "World" & input$include_world == TRUE)) &
-                             dashboard_data$indicator_name == input$filter_indicator,]
+                             dashboard_data$indicator_name %in% as.vector(input$filter_indicator),]
   })
   
   output$multi_ind_plot <- renderPlot({
@@ -194,7 +194,7 @@ server <- function(input, output) {
   import_export_plot_data2 <- reactive({
     metric2 <- import_export_data[import_export_data$indicator_name == input$filter_indicator2, 6][1]
     
-    test12 <- import_export_data[import_export_data$year %in% seq(from=min(input$num2),to=max(input$num2),by=1) &
+    output_data <- import_export_data[import_export_data$year %in% seq(from=min(input$num2),to=max(input$num2),by=1) &
                                  import_export_data$country_name == input$filter_country2 &
                                  import_export_data$metric == metric2 &
                                  !is.na(import_export_data$metric),]
@@ -218,7 +218,7 @@ server <- function(input, output) {
   
   
   bar_data <- reactive({
-    test3 <- merch_usd_data[merch_usd_data$year == input$filter_year3,]
+    output_data <- merch_usd_data[merch_usd_data$year == input$filter_year3,]
   })
   
   output$bar_plot <- renderPlot({
