@@ -82,8 +82,7 @@ ui <- dashboardPage(
       # Third tab content
       tabItem(tabName = "widgets",
               fluidRow(
-                box(plotOutput("old_import_plot", height = 600, width = "100%")),
-                box(plotOutput("old_export_plot", height = 600, width = "100%")),
+                box(plotOutput("import_export_plot2", height = 600, width = "100%"), width = 12),
                 box(
                   sidebarPanel( 
                     sliderInput("num2", "Years to Include:",min = 1970, max = 2019,step=1,value=c(1970,2014), width = 600), width = 12)
@@ -94,15 +93,15 @@ ui <- dashboardPage(
                               choices=levels(import_export_data$country_name),
                               selected=levels(import_export_data$country_name)[1]),
                   selectInput("filter_indicator2", "Indicator", 
-                              choices=levels(import_export_data$metric),
-                              selected=levels(import_export_data$metric)[1], multiple = FALSE))
+                              choices=levels(import_export_data$indicator_name),
+                              selected=levels(import_export_data$indicator_name)[1], multiple = FALSE))
                 
               )
       ),
       # Fourth tab content
       tabItem(tabName = "Imports",
               fluidRow(
-                box(plotOutput("plot4", height = 600, width = "100%"), width = 8),
+                box(plotOutput("bar_plot", height = 600, width = "100%"), width = 8),
                 box(sidebarPanel( 
                     sliderInput("filter_year3", "Year",min = 1970, max = 2014,step=1,value=2014, width = 600), width = "100%"), width = 4
                   
@@ -192,32 +191,24 @@ server <- function(input, output) {
   
   #### Third Tab Plot ####
   
-  tab_3_data <- reactive({
-    test2 <- import_export_data[import_export_data$year %in% seq(from=min(input$num2),to=max(input$num2),by=1) & 
-                                  import_export_data$country_name == input$filter_country2 &
-                                  import_export_data$metric == input$filter_indicator2,]
+  import_export_plot_data2 <- reactive({
+    metric2 <- import_export_data[import_export_data$indicator_name == input$filter_indicator2, 6][1]
+    
+    test12 <- import_export_data[import_export_data$year %in% seq(from=min(input$num2),to=max(input$num2),by=1) &
+                                 import_export_data$country_name == input$filter_country2 &
+                                 import_export_data$metric == metric2 &
+                                 !is.na(import_export_data$metric),]
   })
   
-  output$old_import_plot <- renderPlot({
+  output$import_export_plot2 <- renderPlot({
     
-    ggplot(tab_3_data(),aes(x=as.numeric(year),y=Merch_Imports)) + 
-      geom_line() + 
-      ylab(paste0(input$filter_indicator2, " as % of Merchandise Imports")) +
+    ggplot(import_export_plot_data2(),aes(x=as.numeric(year),y=value)) +
+      geom_line() +
+      ylab(" as % of Merchandise Imports/Exports") +
       xlab("Year") +
       xlim(min(input$num2), max(input$num2)) +
       theme_classic() +
-      scale_y_continuous(labels = scales::percent_format(accuracy = 1))
-    
-  },width = "auto")
-  
-  output$old_export_plot <- renderPlot({
-    
-    ggplot(tab_3_data(),aes(x=as.numeric(year),y=Merch_Exports)) + 
-      geom_line() + 
-      ylab(paste0(input$filter_indicator2, " as % of Merchandise Exports")) +
-      xlab("Year") +
-      xlim(min(input$num2), max(input$num2)) +
-      theme_classic() +
+      facet_wrap(~scale, scales = "free_y") +
       scale_y_continuous(labels = scales::percent_format(accuracy = 1))
     
   },width = "auto")
@@ -226,14 +217,14 @@ server <- function(input, output) {
   #### Fourth Tab Plot ####
   
   
-  old_bar_data <- reactive({
+  bar_data <- reactive({
     test3 <- merch_usd_data[merch_usd_data$year == input$filter_year3,]
   })
   
-  output$old_bar_plot <- renderPlot({
+  output$bar_plot <- renderPlot({
     
-    old_bar_data() %>% filter(country_name != "World") %>% mutate(value = value/1000000000) %>% 
-      ggplot(aes(x=country_name, y=value, fill = key)) +
+    bar_data() %>% filter(country_name != "World") %>% mutate(value = value/1000000000) %>% 
+      ggplot(aes(x=country_name, y=value, fill = scale)) +
       geom_bar(stat ="identity", position=position_dodge()) +
       ggtitle(paste0("Merchandise Imports & Exports in ", input$filter_year3)) +
       theme_classic() +
@@ -244,7 +235,7 @@ server <- function(input, output) {
       theme(legend.justification = "centre", legend.position = "top", plot.title = element_text(hjust = 0.5), legend.title = element_blank())
     
   },width = "auto")
-  
+
 
 }
 
