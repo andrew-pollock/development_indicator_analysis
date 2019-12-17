@@ -1,14 +1,17 @@
 
 if(!require("shiny")) install.packages('shiny')
 if(!require("shinydashboard")) install.packages('shinydashboard')
+if(!require("rworldmap")) install.packages('rworldmap')
 
 library(shiny)
 library(shinydashboard)
+library(rworldmap)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
 
 dashboard_data <- read.csv("data/dashboard_data.csv")
+world_data <- read.csv("data/world_data.csv")
 indicator_data <- read.csv("data/indicator_data.csv", stringsAsFactors = FALSE)
 
 
@@ -25,6 +28,7 @@ import_export_data$indicator_name <- as.factor(import_export_data$indicator_name
 import_export_data$region <- as.factor(import_export_data$region)
 import_export_data$metric <- as.factor(import_export_data$metric)
 
+colourPalette <- brewer.pal(11,'RdYlGn')
 
 ui <- dashboardPage(
   
@@ -141,6 +145,20 @@ server <- function(input, output) {
   },width = "auto")
   
   # Map plot goes here
+  map_data <- reactive({
+    output_data <- world_data[world_data$year == max(input$num3) & 
+                              world_data$indicator_name == input$filter_indicator3,]
+  })
+  
+  output$map_plot <- renderPlot({
+    
+    mapCountryData(joinCountryData2Map(map_data(),
+                                       joinCode = "ISO3",
+                                       nameJoinColumn = "country_code",
+                                       verbose = FALSE),nameColumnToPlot="value",colourPalette=colourPalette)
+    
+  },width = "auto")
+  
   
   import_export_bar_data <- reactive({
     output_data <- merch_usd_data[merch_usd_data$year == max(input$num3),]

@@ -142,7 +142,17 @@ dashboard_data <- final_data %>% filter(year >= 1970, year <= 2014) %>% left_joi
                                                  'Merchandise imports (current US$)') ~ value,
                            TRUE ~ round(value/100,4)))
 
+world_data <-  raw_data %>% gather(key = "year", value="value", -country_name, -country_code, -indicator_name, -indicator_code) %>% 
+  filter(year >= 1970, year <= 2014, indicator_name %in% indicators, !is.na(value)) %>% 
+  mutate(value = case_when(indicator_name %in% c('Merchandise exports (current US$)',
+                                                 'Merchandise imports (current US$)') ~ value,
+                           TRUE ~ round(value/100,4)))  %>% select(country_code, indicator_name, year, value) %>%
+  filter(!(country_code %in% c('ARB','CEB','CHI','CSS','EAP','EAR','EAS','ECA','ECS','EMU','EUU','FCS','GIB','HIC','HPC','IBD',
+                               'IBT','IDA','IDB','IDX','INX','KSV','LAC','LCN','LDC','LIC','LMC','LMY','LTE','MEA','MIC','MNA',
+                               'NAC','OED','OSS','PRE','PSS','PST','SAS','SSA','SSF','SST','TEA','TEC','TLA','TMN','TSA','TSS',
+                               'UMC', 'WLD')))
 
 write.csv(dashboard_data, file = "data/dashboard_data.csv", row.names = FALSE)
+write.csv(world_data, file = "data/world_data.csv", row.names = FALSE)
 
 
