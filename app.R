@@ -6,6 +6,7 @@ if(!require("rworldmap")) install.packages('rworldmap')
 library(shiny)
 library(shinydashboard)
 library(rworldmap)
+library(RColorBrewer)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
@@ -155,7 +156,11 @@ server <- function(input, output) {
     mapCountryData(joinCountryData2Map(map_data(),
                                        joinCode = "ISO3",
                                        nameJoinColumn = "country_code",
-                                       verbose = FALSE),nameColumnToPlot="value",colourPalette=colourPalette)
+                                       verbose = FALSE),
+                   nameColumnToPlot="value",
+                   colourPalette=colourPalette,
+                   mapTitle= map_data()$indicator_name[1]
+                )
     
   },width = "auto")
   
