@@ -152,7 +152,7 @@ server <- function(input, output) {
   })
   
   output$map_plot <- renderPlot({
-    
+    par(mar=c(0, 0, 1, 0), pty = "m",xaxs = "r", xaxt = 's', xpd = NA, yaxs = "i", yaxt = 's')
     mapCountryData(joinCountryData2Map(map_data(),
                                        joinCode = "ISO3",
                                        nameJoinColumn = "country_code",
