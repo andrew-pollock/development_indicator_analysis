@@ -29,7 +29,7 @@ import_export_data$indicator_name <- as.factor(import_export_data$indicator_name
 import_export_data$region <- as.factor(import_export_data$region)
 import_export_data$metric <- as.factor(import_export_data$metric)
 
-colourPalette <- brewer.pal(11,'RdYlGn')
+colourPalette <- brewer.pal(11,'RdYlBu')
 
 ui <- dashboardPage(
   
@@ -53,7 +53,7 @@ ui <- dashboardPage(
                 
                 box( ## Bottom Left
                   sidebarPanel( 
-                    sliderInput("num3", "Years to Include:",min = 1970, max = 2019,step=1,value=c(1970,2014), width = 600), width = 12),
+                    sliderInput("num3", "Years to Include:",min = 1970, max = 2014,step=1,value=c(1970,2014), width = 600), width = 12),
                   selectInput("filter_country3", "Country", 
                               choices=levels(import_export_data$country_name),
                               selected=levels(import_export_data$country_name)[1]),
@@ -134,14 +134,24 @@ server <- function(input, output) {
   
   output$import_export_plot <- renderPlot({
     
-    ggplot(import_export_plot_data(),aes(x=as.numeric(year),y=value)) +
-      geom_line() +
+    ggplot(import_export_plot_data(),aes(x=as.numeric(year),y=value, color=scale)) +
+      geom_line(size=1.5) +
       ylab(" as % of Merchandise Imports/Exports") +
       xlab("Year") +
       xlim(min(input$num3), max(input$num3)) +
       theme_classic() +
       facet_wrap(~scale, scales = "free_y") +
-      scale_y_continuous(labels = scales::percent_format(accuracy = 1))
+      scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
+      scale_color_manual(values=c("#1b9e77", "#d95f02")) +
+      theme(legend.position = "none") +
+      theme(
+        plot.title = element_text(size=14, face="bold"),
+        axis.title.x = element_text(size=12, face="bold"),
+        axis.title.y = element_text(size=12, face="bold"),
+        axis.text.x = element_text(size=10),
+        axis.text.y = element_text(size=10),
+        strip.text.x = element_text(size = 11, face="bold"), legend.text=element_text(size=12)
+      )
     
   },width = "auto")
   
@@ -180,7 +190,16 @@ server <- function(input, output) {
       facet_wrap(~region, scales = "free_x") +
       ylab("Current US Dollars (in Billions)") +
       scale_y_continuous(labels = scales::dollar_format(prefix="$", suffix = "B")) +
-      theme(legend.justification = "centre", legend.position = "top", plot.title = element_text(hjust = 0.5), legend.title = element_blank())
+      theme(legend.justification = "centre", legend.position = "top", plot.title = element_text(hjust = 0.5), legend.title = element_blank()) +
+      scale_fill_manual(values=c("#1b9e77", "#d95f02")) +
+      theme(
+        plot.title = element_text(size=14, face="bold"),
+        axis.title.x = element_text(size=12, face="bold"),
+        axis.title.y = element_text(size=12, face="bold"),
+        axis.text.x = element_text(size=10),
+        axis.text.y = element_text(size=10),
+        strip.text.x = element_text(size = 11, face="bold"), legend.text=element_text(size=12)
+      )
     
   },width = "auto")
   
@@ -263,3 +282,4 @@ server <- function(input, output) {
 }
 
 shinyApp(ui, server)
+  
