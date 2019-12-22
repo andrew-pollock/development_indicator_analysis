@@ -52,7 +52,7 @@ ui <- dashboardPage(
                 box(plotOutput("map_plot", height = 450, width = "100%")), ## Top Right  (this will be the map)
               ),
               fluidRow(column(width = 4,
-                              box( ## Bottom Left
+                              box(title = "Inputs", status = "primary", solidHeader = TRUE, ## Bottom Left
                                 sidebarPanel( 
                                   sliderInput("num3", "Years to Include:",min = 1970, max = 2014,step=1,value=c(1970,2014), width = 600),
                                 selectInput("filter_country3", "Country", 
