@@ -50,18 +50,20 @@ ui <- dashboardPage(
               fluidRow(
                 box(plotOutput("import_export_plot", height = 450, width = "100%")), ## Top left
                 box(plotOutput("map_plot", height = 450, width = "100%")), ## Top Right  (this will be the map)
-                
-                box( ## Bottom Left
-                  sidebarPanel( 
-                    sliderInput("num3", "Years to Include:",min = 1970, max = 2014,step=1,value=c(1970,2014), width = 600), width = 12),
-                  selectInput("filter_country3", "Country", 
-                              choices=levels(import_export_data$country_name),
-                              selected=levels(import_export_data$country_name)[1]),
-                  selectInput("filter_indicator3", "Indicator", 
-                              choices=levels(import_export_data$indicator_name),
-                              selected=levels(import_export_data$indicator_name)[1], multiple = FALSE), width = 4),  
-                valueBoxOutput("progressBox", width = 2),
-                box(plotOutput("import_export_bar", height = 450, width = "100%")) ## Bottom right
+              ),
+              fluidRow(column(width = 4,
+                              box( ## Bottom Left
+                                sidebarPanel( 
+                                  sliderInput("num3", "Years to Include:",min = 1970, max = 2014,step=1,value=c(1970,2014), width = 600),
+                                selectInput("filter_country3", "Country", 
+                                            choices=levels(import_export_data$country_name),
+                                            selected=levels(import_export_data$country_name)[1]),
+                                selectInput("filter_indicator3", "Indicator", 
+                                            choices=levels(import_export_data$indicator_name),
+                                            selected=levels(import_export_data$indicator_name)[1], multiple = FALSE), width = "100%"), width = 12)),  
+                       
+                       column(width = 2, valueBoxOutput("progressBox", width = "100%"), valueBoxOutput("progressBox2", width = "100%")),
+                       column(width = 6, box(plotOutput("import_export_bar", height = 400, width = "100%"), width = "100%")) ## Bottom right
               )
       ),
       # Second Tab
@@ -160,12 +162,28 @@ server <- function(input, output) {
     output_data <- dashboard_data[dashboard_data$year == max(input$num3) & 
                                     (dashboard_data$country_name == input$filter_country3) &
                                     dashboard_data$indicator_name == input$filter_indicator3,]
-    output_value <- output_data$value
   })
   
   output$progressBox <- renderValueBox({
     valueBox(
-      paste0(kpi_data()*100, "%"), "Progress", icon = icon("list"),
+      paste0(kpi_data()$value*100, "%"), #kpi_data()$indicator_name, 
+      gsub("\\(.+", "", kpi_data()$indicator_name),
+      icon = icon("percent"),
+      color = "purple"
+    )
+  })
+  
+  kpi_rank_data <- reactive({
+    year_indicator_data <- dashboard_data[dashboard_data$year == max(input$num3) &
+                                            dashboard_data$indicator_name == input$filter_indicator3,]
+    year_indicator_data$rank <- scales::ordinal(rank(-year_indicator_data$value))
+    year_indicator_data <- year_indicator_data[year_indicator_data$country_name == input$filter_country3,]
+
+  })
+  
+  output$progressBox2 <- renderValueBox({
+    valueBox(
+      kpi_rank_data()$rank, "Highest", icon = icon("chart-line"),
       color = "purple"
     )
   })
