@@ -60,9 +60,12 @@ ui <- dashboardPage(
                                             selected=levels(import_export_data$country_name)[1]),
                                 selectInput("filter_indicator3", "Indicator", 
                                             choices=levels(import_export_data$indicator_name),
-                                            selected=levels(import_export_data$indicator_name)[1], multiple = FALSE), width = "100%"), width = 12)),  
+                                            selected=levels(import_export_data$indicator_name)[1], multiple = FALSE), width = "100%"), width = 12, height = 400)),  
                        
-                       column(width = 2, valueBoxOutput("progressBox", width = "100%"), valueBoxOutput("progressBox2", width = "100%")),
+                       column(width = 2,
+                                             valueBoxOutput("progressBox", width = "100%"), 
+                                             valueBoxOutput("progressBox2", width = "100%")
+                              ),
                        column(width = 6, box(plotOutput("import_export_bar", height = 400, width = "100%"), width = "100%")) ## Bottom right
               )
       ),
@@ -144,7 +147,7 @@ server <- function(input, output) {
       xlim(min(input$num3), max(input$num3)) +
       theme_classic() +
       facet_wrap(~scale, scales = "free_y") +
-      scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
+      scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) +
       scale_color_manual(values=c("#1b9e77", "#d95f02")) +
       theme(legend.position = "none") +
       theme(
@@ -285,7 +288,7 @@ server <- function(input, output) {
       xlim(min(input$num2), max(input$num2)) +
       theme_classic() +
       facet_wrap(~scale, scales = "free_y") +
-      scale_y_continuous(labels = scales::percent_format(accuracy = 1))
+      scale_y_continuous(labels = scales::percent_format(accuracy = 0.1))
     
   },width = "auto")
   
