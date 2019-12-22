@@ -59,7 +59,8 @@ ui <- dashboardPage(
                               selected=levels(import_export_data$country_name)[1]),
                   selectInput("filter_indicator3", "Indicator", 
                               choices=levels(import_export_data$indicator_name),
-                              selected=levels(import_export_data$indicator_name)[1], multiple = FALSE)),
+                              selected=levels(import_export_data$indicator_name)[1], multiple = FALSE), width = 4),  
+                valueBoxOutput("progressBox", width = 2),
                 box(plotOutput("import_export_bar", height = 450, width = "100%")) ## Bottom right
               )
       ),
@@ -155,6 +156,21 @@ server <- function(input, output) {
     
   },width = "auto")
   
+  kpi_data <- reactive({
+    output_data <- dashboard_data[dashboard_data$year == max(input$num3) & 
+                                    (dashboard_data$country_name == input$filter_country3) &
+                                    dashboard_data$indicator_name == input$filter_indicator3,]
+    output_value <- output_data$value
+  })
+  
+  output$progressBox <- renderValueBox({
+    valueBox(
+      paste0(kpi_data()*100, "%"), "Progress", icon = icon("list"),
+      color = "purple"
+    )
+  })
+  
+  
   # Map plot goes here
   map_data <- reactive({
     output_data <- world_data[world_data$year == max(input$num3) & 
@@ -169,7 +185,7 @@ server <- function(input, output) {
                                        verbose = FALSE),
                    nameColumnToPlot="value",
                    colourPalette=colourPalette,
-                   mapTitle= map_data()$indicator_name[1]
+                   mapTitle= paste0(map_data()$year[1], " ", map_data()$indicator_name[1])
                 )
     
   },width = "auto")
@@ -282,4 +298,4 @@ server <- function(input, output) {
 }
 
 shinyApp(ui, server)
-  
+    
