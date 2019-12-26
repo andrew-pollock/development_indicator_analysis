@@ -29,7 +29,8 @@ import_export_data$indicator_name <- as.factor(import_export_data$indicator_name
 import_export_data$region <- as.factor(import_export_data$region)
 import_export_data$metric <- as.factor(import_export_data$metric)
 
-colourPalette <- brewer.pal(11,'RdYlBu')
+colourPalette <- c("#40004b","#762a83","#9970ab","#c2a5cf","#e7d4e8","#f7f7f7",
+"#d9f0d3","#a6dba0","#5aae61","#1b7837","#00441b")
 
 ui <- dashboardPage(
   
@@ -43,7 +44,7 @@ ui <- dashboardPage(
     menuItem("Import Export Bar", tabName = "Imports", icon = icon("poll"))
   )),
   
-  dashboardBody(
+  dashboardBody(titlePanel(textOutput("country_title")),
     tabItems(
       # First tab content
       tabItem(tabName = "main_dashboard",
@@ -138,11 +139,18 @@ server <- function(input, output) {
                                  !is.na(import_export_data$metric),]
   })
   
+  output$country_title <- renderText({ paste0(as.character(import_export_plot_data()$country_name[1]), 
+                                              " Merchandise Imports & Exports from ",
+                                              as.character(min(input$num3)), 
+                                              " to ",
+                                              as.character(max(input$num3))
+                                              ) })
+  
   output$import_export_plot <- renderPlot({
     
     ggplot(import_export_plot_data(),aes(x=as.numeric(year),y=value, color=scale)) +
       geom_line(size=1.5) +
-      ylab(" as % of Merchandise Imports/Exports") +
+      ylab(paste0(as.character(import_export_plot_data()$metric), " Imports & Exports")) +   #" as % of Merchandise Imports/Exports") +
       xlab("Year") +
       xlim(min(input$num3), max(input$num3)) +
       theme_classic() +
@@ -186,7 +194,7 @@ server <- function(input, output) {
   
   output$progressBox2 <- renderValueBox({
     valueBox(
-      kpi_rank_data()$rank, "Highest", icon = icon("chart-line"),
+      kpi_rank_data()$rank, "Highest out of 6", icon = icon("chart-line"),
       color = "purple"
     )
   })
