@@ -11,8 +11,8 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 
-dashboard_data <- read.csv("data/dashboard_data.csv")
-world_data <- read.csv("data/world_data.csv")
+dashboard_data <- read.csv("data/dashboard_data.csv", stringsAsFactors = FALSE)
+world_data <- read.csv("data/world_data.csv", stringsAsFactors = FALSE)
 indicator_data <- read.csv("data/indicator_data.csv", stringsAsFactors = FALSE)
 
 
@@ -205,7 +205,7 @@ server <- function(input, output) {
                                        nameJoinColumn = "country_code",
                                        verbose = FALSE),
                    nameColumnToPlot="value",
-                   colourPalette=colourPalette,
+                   colourPalette=colourPalette, numCats = 11,
                    mapTitle= paste0(map_data()$year[1], " ", map_data()$indicator_name[1])
                 )
     
