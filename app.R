@@ -40,15 +40,15 @@ ui <- dashboardPage(
   
   dashboardSidebar(sidebarMenu(
     menuItem("Country Dashboard", tabName = "main_dashboard", icon = icon("dashboard")),
-    menuItem("Country Deepdive", tabName = "dashboard", icon = icon("dashboard")),
+    menuItem("Country Deepdive", tabName = "deepdive", icon = icon("dashboard")),
     menuItem("Country Comparison", tabName = "widgets", icon = icon("poll")),
     menuItem("Import Export Bar", tabName = "Imports", icon = icon("poll"))
   )),
   
-  dashboardBody(titlePanel(textOutput("country_title")),
+  dashboardBody(
     tabItems(
       # First tab content
-      tabItem(tabName = "main_dashboard",
+      tabItem(tabName = "main_dashboard", titlePanel(textOutput("country_title")),
               fluidRow(
                 box(plotOutput("import_export_plot", height = 450, width = "100%")), ## Top left
                 box(plotOutput("map_plot", height = 450, width = "100%")), ## Top Right  (this will be the map)
@@ -73,25 +73,23 @@ ui <- dashboardPage(
               )
       ),
       # Second Tab
-      tabItem(tabName = "dashboard",
+      tabItem(tabName = "deepdive",
               fluidRow(
-                box(plotOutput("multi_ind_plot", height = 600, width = "100%")),
+                box(plotOutput("multi_ind_plot", height = 600, width = "100%"), width = 9),
                 
-                box(
+                box(title = "Inputs", status = "primary", solidHeader = TRUE,
                   sidebarPanel( 
-                    sliderInput("num", "Years to Include:",min = 1970, max = 2019,step=1,value=c(1970,2014), width = 600), width = 12)
-                  
-                ),
-                box(
-                  selectInput("filter_country", "Country", 
-                              choices=levels(dashboard_data$country_name),
-                              selected=levels(dashboard_data$country_name)[1]),
-                  selectInput("filter_indicator", "Indicator", 
-                              choices=levels(dashboard_data$indicator_name),
-                              selected=levels(dashboard_data$indicator_name)[1], multiple = TRUE)),
-                box(checkboxInput("include_world", "Include World?", value = FALSE),
-                    checkboxInput("include_se", "Include Standard Error?", value = FALSE)
-                ))
+                    sliderInput("num2", "Years to Include:",min = 1970, max = 2014,step=1,value=c(1970,2014), width = 600), 
+                  selectInput("filter_country2", "Country", 
+                              choices=levels(import_export_data$country_name),
+                              selected=levels(import_export_data$country_name)[1]),
+                  checkboxInput("agricultural_ind", "Include Agricultural Materials?", value = TRUE),
+                  checkboxInput("food_ind", "Include Food?", value = TRUE),
+                  checkboxInput("fuel_ind", "Include Fuel?", value = TRUE),
+                  checkboxInput("manufacturing_ind", "Include Manufacturing?", value = TRUE),
+                  checkboxInput("ores_ind", "Include Ores and Metals?", value = TRUE), width = "100%"), width = 3
+                )
+              )
       ),
       # Third tab content
       tabItem(tabName = "widgets",
@@ -256,26 +254,37 @@ server <- function(input, output) {
   #### Second Tab Plots ####
   
   multi_ind_plot_data <- reactive({
-    output_data <- dashboard_data[dashboard_data$year %in% seq(from=min(input$num),to=max(input$num),by=1) & 
-                             (dashboard_data$country_name == input$filter_country | (dashboard_data$country_name == "World" & input$include_world == TRUE)) &
-                             dashboard_data$indicator_name %in% as.vector(input$filter_indicator),]
+    
+    output_data <- import_export_data[import_export_data$year %in% seq(from=min(input$num2),to=max(input$num2),by=1) & 
+                             (import_export_data$country_name == input$filter_country2) &
+                             (import_export_data$metric != "Agricultural raw materials" | input$agricultural_ind == TRUE) &
+                             (import_export_data$metric != "Food" | input$food_ind == TRUE) &
+                             (import_export_data$metric != "Fuel" | input$fuel_ind == TRUE) &
+                             (import_export_data$metric != "Manufacturing" | input$manufacturing_ind == TRUE) &
+                             (import_export_data$metric != "Ores and metals" | input$ores_ind == TRUE) &
+                             !is.na(import_export_data$metric) &
+                             import_export_data$metric != "Merchandise",]
   })
   
   output$multi_ind_plot <- renderPlot({
     
-    ggplot(multi_ind_plot_data(),aes(x=as.numeric(year),y=value, color=indicator_name, linetype=country_name)) + 
-      geom_line() + 
-      ggtitle(paste0(input$filter_country, " Economic Health")) +
-      ylab(input$filter_indicator) +
-      xlab("Year") + 
-      xlim(min(input$num), max(input$num)) +
-      # theme_bw() +
+    ggplot(multi_ind_plot_data(), aes(x=as.numeric(year),y=value, color=metric)) +
+      geom_line(size=1.5) +
+      ylab("% of Total Merchandise Imports & Exports") + 
+      xlab("Year") +
+      xlim(min(input$num2), max(input$num2)) +
       theme_classic() +
+      facet_wrap(~scale) +
       scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
-      theme(legend.key.size = unit(1, 'cm')) +
-      stat_smooth(method="lm", se = input$include_se, fullrange=TRUE) + #, color = "black")
-      scale_linetype_discrete(name = "Country", guide = if(!input$include_world) 'none' else "legend") +
-      scale_color_discrete(name = "Economic Indicators", guide = if(length(input$filter_indicator) == 1) 'none' else "legend")
+      theme(
+        plot.title = element_text(size=14, face="bold"),
+        axis.title.x = element_text(size=12, face="bold"),
+        axis.title.y = element_text(size=12, face="bold"),
+        axis.text.x = element_text(size=10),
+        axis.text.y = element_text(size=10),
+        strip.text.x = element_text(size = 11, face="bold"), legend.text=element_text(size=12),
+        legend.justification = "centre", legend.position = "bottom", legend.key.width=unit(2.5, "line"), legend.title=element_blank()
+      )
     
   },width = "auto")
   
