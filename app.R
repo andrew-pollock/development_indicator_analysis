@@ -15,6 +15,7 @@ dashboard_data <- read.csv("data/dashboard_data.csv", stringsAsFactors = FALSE)
 world_data <- read.csv("data/world_data.csv", stringsAsFactors = FALSE)
 indicator_data <- read.csv("data/indicator_data.csv", stringsAsFactors = FALSE)
 
+world_data$value <- round(world_data$value, 3)
 
 import_export_data <- select(dashboard_data, -country_code)
 import_export_data <- left_join(import_export_data, indicator_data, by = "indicator_name") %>% 
@@ -61,7 +62,8 @@ ui <- dashboardPage(
                                             selected=levels(import_export_data$country_name)[1]),
                                 selectInput("filter_indicator3", "Indicator", 
                                             choices=levels(import_export_data$indicator_name),
-                                            selected=levels(import_export_data$indicator_name)[1], multiple = FALSE), width = "100%"), width = 12, height = 400)),  
+                                            selected=levels(import_export_data$indicator_name)[1], multiple = FALSE), 
+                                checkboxInput("include_world1", "Include World?", value = FALSE), width = "100%"), width = 12, height = 400)),  
                        
                        column(width = 2,
                                              valueBoxOutput("progressBox", width = "100%"), 
@@ -134,7 +136,7 @@ server <- function(input, output) {
     metric <- import_export_data[import_export_data$indicator_name == input$filter_indicator3, 6][1]
     
     output_data <- import_export_data[import_export_data$year %in% seq(from=min(input$num3),to=max(input$num3),by=1) &
-                                 import_export_data$country_name == input$filter_country3 &
+                                 (import_export_data$country_name == input$filter_country3  | (import_export_data$country_name == "World" & input$include_world1 == TRUE)) &
                                  import_export_data$metric == metric &
                                  !is.na(import_export_data$metric),]
   })
@@ -148,7 +150,7 @@ server <- function(input, output) {
   
   output$import_export_plot <- renderPlot({
     
-    ggplot(import_export_plot_data(),aes(x=as.numeric(year),y=value, color=scale)) +
+    ggplot(import_export_plot_data(),aes(x=as.numeric(year),y=value, color=scale, linetype=country_name)) +
       geom_line(size=1.5) +
       ylab(paste0(as.character(import_export_plot_data()$metric), " Imports & Exports")) +   #" as % of Merchandise Imports/Exports") +
       xlab("Year") +
@@ -156,15 +158,17 @@ server <- function(input, output) {
       theme_classic() +
       facet_wrap(~scale, scales = "free_y") +
       scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) +
-      scale_color_manual(values=c("#1b9e77", "#d95f02")) +
+      scale_color_manual(values=c("#1b9e77", "#d95f02"), guide = 'none') +
       theme(legend.position = "none") +
+      scale_linetype_discrete(name = "Country", guide = if(!input$include_world1) 'none' else "legend") +
       theme(
         plot.title = element_text(size=14, face="bold"),
         axis.title.x = element_text(size=12, face="bold"),
         axis.title.y = element_text(size=12, face="bold"),
         axis.text.x = element_text(size=10),
         axis.text.y = element_text(size=10),
-        strip.text.x = element_text(size = 11, face="bold"), legend.text=element_text(size=12)
+        strip.text.x = element_text(size = 11, face="bold"), legend.text=element_text(size=12),
+        legend.justification = "centre", legend.position = "bottom", legend.key.width=unit(2.5, "line"), legend.title=element_blank()
       )
     
   },width = "auto")
