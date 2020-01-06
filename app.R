@@ -2,14 +2,11 @@
 if(!require("shiny")) install.packages('shiny')
 if(!require("shinydashboard")) install.packages('shinydashboard')
 if(!require("rworldmap")) install.packages('rworldmap')
+if(!require("RColorBrewer")) install.packages('RColorBrewer')
+if(!require("dplyr")) install.packages('dplyr')
+if(!require("tidyr")) install.packages('tidyr')
+if(!require("ggplot2")) install.packages('ggplot2')
 
-library(shiny)
-library(shinydashboard)
-library(rworldmap)
-library(RColorBrewer)
-library(dplyr)
-library(tidyr)
-library(ggplot2)
 
 dashboard_data <- read.csv("data/dashboard_data.csv", stringsAsFactors = FALSE)
 world_data <- read.csv("data/world_data.csv", stringsAsFactors = FALSE)
