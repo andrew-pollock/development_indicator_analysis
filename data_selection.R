@@ -132,7 +132,8 @@ final_data <- raw_data %>% gather(key = "year", value="value", -country_name, -c
 
 final_data %>% group_by(year) %>% summarise(percent_missing = sum(is.na(value))/n()) %>%
   ggplot(aes(x=as.integer(year), y=percent_missing)) + 
-  geom_line() + theme_bw() + ylim(0,1)
+  geom_line() + theme_bw() + ylim(0,1) + xlab("Year") + ggtitle("Percentage of Values Missing by Year") +
+  theme(plot.title = element_text(hjust = 0.5))
 # Our chosen data is fully available from 1970 up until 2014
 
 # To allow for the most stable period for comparisons we'll look at 1975 until 2014
