@@ -149,7 +149,7 @@ server <- function(input, output) {
     
     ggplot(import_export_plot_data(),aes(x=as.numeric(year),y=value, color=scale, linetype=country_name)) +
       geom_line(size=1.5) +
-      ylab(paste0(as.character(import_export_plot_data()$metric), " Imports & Exports")) +   #" as % of Merchandise Imports/Exports") +
+      ylab(paste0(as.character(import_export_plot_data()$metric), " Imports & Exports")) + 
       xlab("Year") +
       xlim(min(input$num3), max(input$num3)) +
       theme_classic() +
@@ -178,7 +178,7 @@ server <- function(input, output) {
   
   output$progressBox <- renderValueBox({
     valueBox(
-      paste0(kpi_data()$value*100, "%"), #kpi_data()$indicator_name, 
+      paste0(kpi_data()$value*100, "%"), 
       gsub("\\(.+", "", kpi_data()$indicator_name),
       icon = icon("percent"),
       color = "purple"
