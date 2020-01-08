@@ -38,8 +38,7 @@ ui <- dashboardPage(
   dashboardSidebar(sidebarMenu(
     menuItem("Country Dashboard", tabName = "main_dashboard", icon = icon("dashboard")),
     menuItem("Country Deepdive", tabName = "deepdive", icon = icon("dashboard")),
-    menuItem("Country Comparison", tabName = "widgets", icon = icon("poll")),
-    menuItem("Import Export Bar", tabName = "Imports", icon = icon("poll"))
+    menuItem("Country Comparison", tabName = "widgets", icon = icon("poll"))
   )),
   
   dashboardBody(
@@ -104,17 +103,6 @@ ui <- dashboardPage(
                   selectInput("filter_indicator2", "Indicator", 
                               choices=levels(import_export_data$indicator_name),
                               selected=levels(import_export_data$indicator_name)[1], multiple = FALSE))
-                
-              )
-      ),
-      # Fourth tab content
-      tabItem(tabName = "Imports",
-              fluidRow(
-                box(plotOutput("bar_plot", height = 600, width = "100%"), width = 8),
-                box(sidebarPanel( 
-                    sliderInput("filter_year3", "Year",min = 1970, max = 2014,step=1,value=2014, width = 600), width = "100%"), width = 4
-                  
-                )
                 
               )
       ))
@@ -318,30 +306,6 @@ server <- function(input, output) {
       scale_y_continuous(labels = scales::percent_format(accuracy = 0.1))
     
   },width = "auto")
-  
-  
-  #### Fourth Tab Plot ####
-  
-  
-  bar_data <- reactive({
-    output_data <- merch_usd_data[merch_usd_data$year == input$filter_year3,]
-  })
-  
-  output$bar_plot <- renderPlot({
-    
-    bar_data() %>% filter(country_name != "World") %>% mutate(value = value/1000000000) %>% 
-      ggplot(aes(x=country_name, y=value, fill = scale)) +
-      geom_bar(stat ="identity", position=position_dodge()) +
-      ggtitle(paste0("Merchandise Imports & Exports in ", input$filter_year3)) +
-      theme_classic() +
-      xlab("Country") +
-      facet_wrap(~region, scales = "free_x") +
-      ylab("Current US Dollars (in Billions)") +
-      scale_y_continuous(labels = scales::dollar_format(prefix="$", suffix = "B")) +
-      theme(legend.justification = "centre", legend.position = "top", plot.title = element_text(hjust = 0.5), legend.title = element_blank())
-    
-  },width = "auto")
-
 
 }
 
