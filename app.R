@@ -72,7 +72,7 @@ ui <- dashboardPage(
                                 selectInput("filter_indicator3", "Indicator", 
                                             choices=levels(dash_levels_filter$indicator_name),
                                             selected=levels(dash_levels_filter$indicator_name)[1], multiple = FALSE), 
-                                checkboxInput("include_world1", "Include World?", value = FALSE), width = "100%"), width = 12, height = 400)),  
+                                checkboxInput("include_world1", "Include World?", value = FALSE), width = "100%", height = NULL), width = 12, height = 400)),  
                        
                        column(width = 2,
                                              valueBoxOutput("progressBox", width = "100%"), 
@@ -250,7 +250,7 @@ server <- function(input, output) {
       ggtitle(paste0("Total Merchandise Imports & Exports in ", max(input$num3))) +
       theme_classic() +
       xlab("Country") +
-      facet_wrap(~region, scales = "free_x") +
+      facet_grid(region~., scales = "free_y") +
       ylab("Current US Dollars (in Billions)") +
       scale_y_continuous(labels = scales::dollar_format(prefix="$", suffix = "B")) +
       theme(legend.justification = "centre", legend.position = "top", plot.title = element_text(hjust = 0.5), legend.title = element_blank()) +
@@ -262,7 +262,7 @@ server <- function(input, output) {
         axis.text.x = element_text(size=10),
         axis.text.y = element_text(size=10),
         strip.text.x = element_text(size = 11, face="bold"), legend.text=element_text(size=12)
-      )
+      ) + coord_flip()
     
   },width = "auto")
   
