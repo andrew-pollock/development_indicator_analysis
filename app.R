@@ -65,7 +65,7 @@ ui <- dashboardPage(
               fluidRow(column(width = 4,
                               box(title = "Inputs", status = "primary", solidHeader = TRUE, ## Bottom Left
                                 sidebarPanel( 
-                                  sliderInput("num3", "Years to Include:",min = 1970, max = 2014,step=1,value=c(1970,2014), width = 600),
+                                  sliderInput("num3", "Years to Include:",min = 1970, max = 2019,step=1,value=c(1970,2014), width = 600),
                                 selectInput("filter_country3", "Country", 
                                             choices=levels(dash_levels_filter$country_name),
                                             selected=levels(dash_levels_filter$country_name)[1]),
@@ -142,7 +142,7 @@ server <- function(input, output) {
                                               " Merchandise Imports & Exports from ",
                                               as.character(min(input$num3)), 
                                               " to ",
-                                              as.character(max(input$num3))
+                                              as.character(pmin(max(input$num3), 2014))
                                               ) })
   
 
@@ -173,7 +173,7 @@ server <- function(input, output) {
   },width = "auto")
   
   kpi_data <- reactive({
-    output_data <- dashboard_data[dashboard_data$year == max(input$num3) & 
+    output_data <- dashboard_data[dashboard_data$year == pmin(max(input$num3), 2014) & 
                                     (dashboard_data$country_name == input$filter_country3) &
                                     dashboard_data$indicator_name == input$filter_indicator3,]
   })
@@ -188,7 +188,7 @@ server <- function(input, output) {
   })
   
   kpi_rank_data <- reactive({
-    year_indicator_data <- dashboard_data[dashboard_data$year == max(input$num3) &
+    year_indicator_data <- dashboard_data[dashboard_data$year == pmin(max(input$num3), 2014) &
                                           dashboard_data$indicator_name == input$filter_indicator3 &
                                           dashboard_data$country_name != "World",]
     year_indicator_data$rank <- scales::ordinal(rank(-year_indicator_data$value))
@@ -204,7 +204,7 @@ server <- function(input, output) {
   })
   
   gdp_rank_data <- reactive({
-    gdp_rank <- gdp_data[gdp_data$year == max(input$num3) &
+    gdp_rank <- gdp_data[gdp_data$year == pmin(max(input$num3), 2014) &
                                       gdp_data$country_name != "World",]
     gdp_rank$rank <- scales::ordinal(rank(-gdp_rank$value))
     gdp_rank <- gdp_rank[gdp_rank$country_name == input$filter_country3,]
@@ -220,7 +220,7 @@ server <- function(input, output) {
   
   # Map plot goes here
   map_data <- reactive({
-    output_data <- world_data[world_data$year == max(input$num3) & 
+    output_data <- world_data[world_data$year == pmin(max(input$num3), 2014) & 
                               world_data$indicator_name == input$filter_indicator3,]
   })
   
@@ -239,7 +239,7 @@ server <- function(input, output) {
   
   
   import_export_bar_data <- reactive({
-    output_data <- merch_usd_data[merch_usd_data$year == max(input$num3),]
+    output_data <- merch_usd_data[merch_usd_data$year == pmin(max(input$num3), 2014),]
   })
   
   output$import_export_bar <- renderPlot({
@@ -247,7 +247,7 @@ server <- function(input, output) {
     import_export_bar_data() %>% filter(country_name != "World") %>% mutate(value = value/1000000000) %>% 
       ggplot(aes(x=country_name, y=value, fill = scale)) +
       geom_bar(stat ="identity", position=position_dodge(), color = "black") +
-      ggtitle(paste0("Total Merchandise Imports & Exports in ", max(input$num3))) +
+      ggtitle(paste0("Total Merchandise Imports & Exports in ", pmin(max(input$num3), 2014))) +
       theme_classic() +
       xlab("Country") +
       facet_grid(region~., scales = "free_y") +
