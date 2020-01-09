@@ -38,6 +38,11 @@ dash_levels_filter <- import_export_data %>% filter(country_name != "World",
                                                    indicator_name != "Merchandise trade (% of GDP)") %>% 
                       select(country_name, indicator_name) %>% distinct() %>% mutate(country_name = factor(country_name), indicator_name = factor(indicator_name))
 
+dash_levels_filter2 <- data.frame(country_name = c("None", as.character(dash_levels_filter$country_name))) %>% distinct() %>% 
+  mutate(country_name = factor(country_name))
+dash_levels_filter2$country_name <- factor(dash_levels_filter2$country_name, levels(dash_levels_filter2$country_name)[c(5,1,2,3,4,6,7)])
+
+
 colourPalette <- c("#40004b","#762a83","#9970ab","#c2a5cf","#e7d4e8","#f7f7f7",
 "#d9f0d3","#a6dba0","#5aae61","#1b7837","#00441b")
 
@@ -69,10 +74,13 @@ ui <- dashboardPage(
                                 selectInput("filter_country3", "Country", 
                                             choices=levels(dash_levels_filter$country_name),
                                             selected=levels(dash_levels_filter$country_name)[1]),
+                                selectInput("filter_comparison_country", "Country to Compare Against", 
+                                            choices=levels(dash_levels_filter2$country_name),
+                                            selected=levels(dash_levels_filter2$country_name)[1]),
                                 selectInput("filter_indicator3", "Indicator", 
                                             choices=levels(dash_levels_filter$indicator_name),
                                             selected=levels(dash_levels_filter$indicator_name)[1], multiple = FALSE), 
-                                checkboxInput("include_world1", "Include World?", value = FALSE), width = "100%", height = NULL), width = 12, height = 400)),  
+                                checkboxInput("include_world1", "Include World?", value = FALSE), width = "100%", height = NULL), width = 12, height = 470)),  
                        
                        column(width = 2,
                                              valueBoxOutput("progressBox", width = "100%"), 
@@ -133,7 +141,9 @@ server <- function(input, output) {
     metric <- import_export_data[import_export_data$indicator_name == input$filter_indicator3, 6][1]
     
     output_data <- import_export_data[import_export_data$year %in% seq(from=min(input$num3),to=max(input$num3),by=1) &
-                                 (import_export_data$country_name == input$filter_country3  | (import_export_data$country_name == "World" & input$include_world1 == TRUE)) &
+                                 (import_export_data$country_name == input$filter_country3  | 
+                                  (import_export_data$country_name == "World" & input$include_world1 == TRUE) |
+                                  import_export_data$country_name == input$filter_comparison_country) &
                                  import_export_data$metric == metric &
                                  !is.na(import_export_data$metric),]
   })
@@ -149,7 +159,8 @@ server <- function(input, output) {
   
   output$import_export_plot <- renderPlot({
     
-    ggplot(import_export_plot_data(),aes(x=as.numeric(year),y=value, color=scale, linetype=country_name)) +
+    ggplot(import_export_plot_data(),aes(x=as.numeric(year),y=value, #color=scale, 
+                                         color=country_name)) +
       geom_line(size=1.5) +
       ylab(paste0(as.character(import_export_plot_data()$metric), " Imports & Exports")) + 
       xlab("Year") +
@@ -157,7 +168,8 @@ server <- function(input, output) {
       theme_classic() +
       facet_wrap(~scale, scales = "free_y") +
       scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) +
-      scale_color_manual(values=c("#1b9e77", "#d95f02"), guide = 'none') +
+      scale_color_manual(values=c("#1f78b4", "#b2df8a", "#a6cee3"), 
+                         guide = if(!input$include_world1 & input$filter_comparison_country == "None") 'none' else "legend" ) +
       theme(legend.position = "none") +
       scale_linetype_discrete(name = "Country", guide = if(!input$include_world1) 'none' else "legend") +
       theme(
@@ -168,7 +180,8 @@ server <- function(input, output) {
         axis.text.y = element_text(size=10),
         strip.text.x = element_text(size = 11, face="bold"), legend.text=element_text(size=12),
         legend.justification = "centre", legend.position = "bottom", legend.key.width=unit(2.5, "line"), legend.title=element_blank()
-      )
+      ) +
+      stat_smooth(method="glm", formula = y ~ splines::bs(x, 3), fullrange=TRUE, se = FALSE, linetype = "dashed", aes(group = country_name), show.legend = FALSE)
     
   },width = "auto")
   
