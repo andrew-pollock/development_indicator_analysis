@@ -48,21 +48,13 @@ colourPalette <- c("#40004b","#762a83","#9970ab","#c2a5cf","#e7d4e8","#f7f7f7",
 
 ui <- dashboardPage(
   
-  dashboardHeader(#title = "Country Economic Health",
-                  title = textOutput("country_title"),
+  dashboardHeader(title = textOutput("country_title"),
                   titleWidth = "100%"),
   
   dashboardSidebar(disable = TRUE),
-  # dashboardSidebar(sidebarMenu(
-  #   menuItem("Country Dashboard", tabName = "main_dashboard", icon = icon("dashboard")),
-  #   menuItem("Country Deepdive", tabName = "deepdive", icon = icon("dashboard")),
-  #   menuItem("Country Comparison", tabName = "widgets", icon = icon("poll"))
-  # )),
-  
+
   dashboardBody(
-   # tabItems(
-      # First tab content
-      tabItem(tabName = "main_dashboard", #titlePanel(textOutput("country_title")),
+      tabItem(tabName = "main_dashboard",
               fluidRow(
                 box(plotOutput("import_export_plot", height = 450, width = "100%")), ## Top left
                 box(plotOutput("map_plot", height = 450, width = "100%")), ## Top Right  (this will be the map)
@@ -89,54 +81,13 @@ ui <- dashboardPage(
                               ),
                        column(width = 6, box(plotOutput("import_export_bar", height = 400, width = "100%"), width = "100%")) ## Bottom right
               )
-      # ),
-      # # Second Tab
-      # tabItem(tabName = "deepdive", titlePanel(textOutput("deepdive_title")),
-      #         fluidRow(
-      #           box(plotOutput("multi_ind_plot", height = 600, width = "100%"), width = 9),
-      #           
-      #           box(title = "Inputs", status = "primary", solidHeader = TRUE,
-      #             sidebarPanel( 
-      #               sliderInput("num2", "Years to Include:",min = 1970, max = 2014,step=1,value=c(1970,2014), width = 600), 
-      #             selectInput("filter_country2", "Country", 
-      #                         choices=levels(import_export_data$country_name),
-      #                         selected=levels(import_export_data$country_name)[1]),
-      #             checkboxInput("agricultural_ind", "Include Agricultural Materials?", value = TRUE),
-      #             checkboxInput("food_ind", "Include Food?", value = TRUE),
-      #             checkboxInput("fuel_ind", "Include Fuel?", value = TRUE),
-      #             checkboxInput("manufacturing_ind", "Include Manufacturing?", value = TRUE),
-      #             checkboxInput("ores_ind", "Include Ores and Metals?", value = TRUE), width = "100%"), width = 3
-      #           )
-      #         )
-      # ),
-      # # Third tab content
-      # tabItem(tabName = "widgets",
-      #         fluidRow(
-      #           box(plotOutput("import_export_plot2", height = 600, width = "100%"), width = 12),
-      #           box(
-      #             sidebarPanel( 
-      #               sliderInput("num2", "Years to Include:",min = 1970, max = 2019,step=1,value=c(1970,2014), width = 600), width = 12)
-      #             
-      #           ),
-      #           box(
-      #             selectInput("filter_country2", "Country", 
-      #                         choices=levels(import_export_data$country_name),
-      #                         selected=levels(import_export_data$country_name)[1]),
-      #             selectInput("filter_indicator2", "Indicator", 
-      #                         choices=levels(import_export_data$indicator_name),
-      #                         selected=levels(import_export_data$indicator_name)[1], multiple = FALSE))
-      #           
-      #         )
       ))
-  )
-  
-  
-#)
+)
+
 
 
 server <- function(input, output) { 
 
-  # Main Dashboard plots
   import_export_plot_data <- reactive({
     metric <- import_export_data[import_export_data$indicator_name == input$filter_indicator3, 6][1]
     
@@ -279,76 +230,6 @@ server <- function(input, output) {
     
   },width = "auto")
   
-  
-  #### Second Tab Plots ####
-  # 
-  # multi_ind_plot_data <- reactive({
-  #   
-  #   output_data <- import_export_data[import_export_data$year %in% seq(from=min(input$num2),to=max(input$num2),by=1) & 
-  #                            (import_export_data$country_name == input$filter_country2) &
-  #                            (import_export_data$metric != "Agricultural raw materials" | input$agricultural_ind == TRUE) &
-  #                            (import_export_data$metric != "Food" | input$food_ind == TRUE) &
-  #                            (import_export_data$metric != "Fuel" | input$fuel_ind == TRUE) &
-  #                            (import_export_data$metric != "Manufacturing" | input$manufacturing_ind == TRUE) &
-  #                            (import_export_data$metric != "Ores and metals" | input$ores_ind == TRUE) &
-  #                            !is.na(import_export_data$metric) &
-  #                            import_export_data$metric != "Merchandise",]
-  # })
-  # 
-  # output$multi_ind_plot <- renderPlot({
-  #   
-  #   ggplot(multi_ind_plot_data(), aes(x=as.numeric(year),y=value, color=metric)) +
-  #     geom_line(size=1.5) +
-  #     ylab("% of Total Merchandise Imports & Exports") + 
-  #     xlab("Year") +
-  #     xlim(min(input$num2), max(input$num2)) +
-  #     theme_classic() +
-  #     facet_wrap(~scale) +
-  #     scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
-  #     theme(
-  #       plot.title = element_text(size=14, face="bold"),
-  #       axis.title.x = element_text(size=12, face="bold"),
-  #       axis.title.y = element_text(size=12, face="bold"),
-  #       axis.text.x = element_text(size=10),
-  #       axis.text.y = element_text(size=10),
-  #       strip.text.x = element_text(size = 11, face="bold"), legend.text=element_text(size=12),
-  #       legend.justification = "centre", legend.position = "bottom", legend.key.width=unit(2.5, "line"), legend.title=element_blank()
-  #     )
-  #   
-  # },width = "auto")
-  # 
-  # output$deepdive_title <- renderText({ paste0(as.character(multi_ind_plot_data()$country_name[1]), 
-  #                                              " Breakdown of Merchandise Imports & Exports from ",
-  #                                              as.character(min(input$num2)), 
-  #                                              " to ",
-  #                                              as.character(max(input$num2))
-  # ) })
-  # 
-  # 
-  # #### Third Tab Plot ####
-  # 
-  # import_export_plot_data2 <- reactive({
-  #   metric2 <- import_export_data[import_export_data$indicator_name == input$filter_indicator2, 6][1]
-  #   
-  #   output_data <- import_export_data[import_export_data$year %in% seq(from=min(input$num2),to=max(input$num2),by=1) &
-  #                                import_export_data$country_name == input$filter_country2 &
-  #                                import_export_data$metric == metric2 &
-  #                                !is.na(import_export_data$metric),]
-  # })
-  # 
-  # output$import_export_plot2 <- renderPlot({
-  #   
-  #   ggplot(import_export_plot_data2(),aes(x=as.numeric(year),y=value)) +
-  #     geom_line() +
-  #     ylab(" as % of Merchandise Imports/Exports") +
-  #     xlab("Year") +
-  #     xlim(min(input$num2), max(input$num2)) +
-  #     theme_classic() +
-  #     facet_wrap(~scale, scales = "free_y") +
-  #     scale_y_continuous(labels = scales::percent_format(accuracy = 0.1))
-  #   
-  # },width = "auto")
-
 }
 
 shinyApp(ui, server)
