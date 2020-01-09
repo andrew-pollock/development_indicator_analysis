@@ -24,7 +24,10 @@ import_export_data <- left_join(import_export_data, indicator_data, by = "indica
   mutate(scale = case_when(scale == "merch_imports" ~ "Merchandise Imports", TRUE ~ "Merchandise Exports"))
 
 
-merch_usd_data <- import_export_data %>% filter(metric == "Merchandise") 
+merch_usd_data <- import_export_data %>% filter(metric == "Merchandise") %>% mutate(region = as.character(region)) %>%
+                                          mutate(region = case_when(region == "Europe & Central Asia" ~ "Europe",
+                                                 region == "East Asia & Pacific" ~ "East Asia",
+                                                 TRUE ~ region))
 
 
 import_export_data$country_name <- as.factor(import_export_data$country_name)
@@ -63,23 +66,32 @@ ui <- dashboardPage(
                               box(title = "Inputs", status = "primary", solidHeader = TRUE, ## Bottom Left
                                 sidebarPanel( 
                                   sliderInput("num3", "Years to Include:",min = 1970, max = 2019,step=1,value=c(1970,2014), width = 600),
-                                selectInput("filter_country3", "Country", 
-                                            choices=levels(dash_levels_filter$country_name),
-                                            selected=levels(dash_levels_filter$country_name)[1]),
-                                selectInput("filter_comparison_country", "Country to Compare Against", 
-                                            choices=levels(dash_levels_filter2$country_name),
-                                            selected=levels(dash_levels_filter2$country_name)[1]),
-                                selectInput("filter_indicator3", "Indicator", 
-                                            choices=levels(dash_levels_filter$indicator_name),
-                                            selected=levels(dash_levels_filter$indicator_name)[1], multiple = FALSE), 
-                                checkboxInput("include_world1", "Include World?", value = FALSE), width = "100%", height = NULL), width = 12, height = 470)),  
+                                  
+                                  
+                                  fluidRow(column(width = 8, selectInput("filter_country", "Country", 
+                                                                         choices=levels(dash_levels_filter$country_name),
+                                                                         selected=levels(dash_levels_filter$country_name)[1])),
+                                           column(width = 4, checkboxInput("include_world", "Include World?", value = FALSE))),
+                                  
+                                  fluidRow(column(width = 8, selectInput("filter_comparison_country", "Country to Compare Against", 
+                                                                         choices=levels(dash_levels_filter2$country_name),
+                                                                         selected=levels(dash_levels_filter2$country_name)[1])),
+                                           column(width = 4, checkboxInput("include_trend", "Include Trendline?", value = FALSE))),
+                                 selectInput("filter_indicator", "Indicator", 
+                                             choices=levels(dash_levels_filter$indicator_name),
+                                             selected=levels(dash_levels_filter$indicator_name)[1], multiple = FALSE) 
+                                , width = "100%", height = 350), width = 12, height = 440)
+                              
+                              
+                              ),  
                        
                        column(width = 2,
+                              titlePanel(h1(strong(textOutput("country_title2"), align = "center"))),
                                              valueBoxOutput("progressBox", width = "100%"), 
                                              valueBoxOutput("progressBox2", width = "100%"),
                                              valueBoxOutput("progressBox3", width = "100%")
                               ),
-                       column(width = 6, box(plotOutput("import_export_bar", height = 400, width = "100%"), width = "100%")) ## Bottom right
+                       column(width = 6, box(plotOutput("import_export_bar", height = 420, width = "100%"), width = "100%")) ## Bottom right
               )
       ))
 )
@@ -89,11 +101,11 @@ ui <- dashboardPage(
 server <- function(input, output) { 
 
   import_export_plot_data <- reactive({
-    metric <- import_export_data[import_export_data$indicator_name == input$filter_indicator3, 6][1]
+    metric <- import_export_data[import_export_data$indicator_name == input$filter_indicator, 6][1]
     
     output_data <- import_export_data[import_export_data$year %in% seq(from=min(input$num3),to=max(input$num3),by=1) &
-                                 (import_export_data$country_name == input$filter_country3  | 
-                                  (import_export_data$country_name == "World" & input$include_world1 == TRUE) |
+                                 (import_export_data$country_name == input$filter_country  | 
+                                  (import_export_data$country_name == "World" & input$include_world == TRUE) |
                                   import_export_data$country_name == input$filter_comparison_country) &
                                  import_export_data$metric == metric &
                                  !is.na(import_export_data$metric),]
@@ -106,7 +118,10 @@ server <- function(input, output) {
                                               as.character(pmin(max(input$num3), 2014))
                                               ) })
   
-
+  output$country_title2 <- renderText({ paste0(as.character(import_export_plot_data()$country_name[1]), 
+                                              " ", as.character(pmin(max(input$num3), 2014))
+  ) })
+  
   
   output$import_export_plot <- renderPlot({
     
@@ -120,9 +135,9 @@ server <- function(input, output) {
       facet_wrap(~scale, scales = "free_y") +
       scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) +
       scale_color_manual(values=c("#1f78b4", "#b2df8a", "#a6cee3"), 
-                         guide = if(!input$include_world1 & input$filter_comparison_country == "None") 'none' else "legend" ) +
+                         guide = if(!input$include_world & input$filter_comparison_country == "None") 'none' else "legend" ) +
       theme(legend.position = "none") +
-      scale_linetype_discrete(name = "Country", guide = if(!input$include_world1) 'none' else "legend") +
+      scale_linetype_discrete(name = "Country", guide = if(!input$include_world) 'none' else "legend") +
       theme(
         plot.title = element_text(size=14, face="bold"),
         axis.title.x = element_text(size=12, face="bold"),
@@ -132,14 +147,16 @@ server <- function(input, output) {
         strip.text.x = element_text(size = 11, face="bold"), legend.text=element_text(size=12),
         legend.justification = "centre", legend.position = "bottom", legend.key.width=unit(2.5, "line"), legend.title=element_blank()
       ) +
-      stat_smooth(method="glm", formula = y ~ splines::bs(x, 3), fullrange=TRUE, se = FALSE, linetype = "dashed", aes(group = country_name), show.legend = FALSE)
+      {if(input$include_trend)stat_smooth(method="glm", formula = y ~ splines::bs(x, 3), fullrange=TRUE, se = FALSE, 
+                                          linetype = "dashed", aes(group = country_name), show.legend = FALSE)}
+
     
   },width = "auto")
   
   kpi_data <- reactive({
     output_data <- dashboard_data[dashboard_data$year == pmin(max(input$num3), 2014) & 
-                                    (dashboard_data$country_name == input$filter_country3) &
-                                    dashboard_data$indicator_name == input$filter_indicator3,]
+                                    (dashboard_data$country_name == input$filter_country) &
+                                    dashboard_data$indicator_name == input$filter_indicator,]
   })
   
   output$progressBox <- renderValueBox({
@@ -153,10 +170,10 @@ server <- function(input, output) {
   
   kpi_rank_data <- reactive({
     year_indicator_data <- dashboard_data[dashboard_data$year == pmin(max(input$num3), 2014) &
-                                          dashboard_data$indicator_name == input$filter_indicator3 &
+                                          dashboard_data$indicator_name == input$filter_indicator &
                                           dashboard_data$country_name != "World",]
     year_indicator_data$rank <- scales::ordinal(rank(-year_indicator_data$value))
-    year_indicator_data <- year_indicator_data[year_indicator_data$country_name == input$filter_country3,]
+    year_indicator_data <- year_indicator_data[year_indicator_data$country_name == input$filter_country,]
 
   })
   
@@ -171,13 +188,13 @@ server <- function(input, output) {
     gdp_rank <- gdp_data[gdp_data$year == pmin(max(input$num3), 2014) &
                                       gdp_data$country_name != "World",]
     gdp_rank$rank <- scales::ordinal(rank(-gdp_rank$value))
-    gdp_rank <- gdp_rank[gdp_rank$country_name == input$filter_country3,]
+    gdp_rank <- gdp_rank[gdp_rank$country_name == input$filter_country,]
 
   })
   
   output$progressBox3 <- renderValueBox({
     valueBox(
-      gdp_rank_data()$rank, "Highest GDP per capita", icon = icon("chart-line"),
+      gdp_rank_data()$rank, "Highest GDP per capita", icon = icon("dollar-sign"),
       color = "purple"
     )
   })
@@ -185,7 +202,7 @@ server <- function(input, output) {
   # Map plot goes here
   map_data <- reactive({
     output_data <- world_data[world_data$year == pmin(max(input$num3), 2014) & 
-                              world_data$indicator_name == input$filter_indicator3,]
+                              world_data$indicator_name == input$filter_indicator,]
   })
   
   output$map_plot <- renderPlot({
