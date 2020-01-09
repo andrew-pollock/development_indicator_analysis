@@ -9,8 +9,13 @@ if(!require("ggplot2")) install.packages('ggplot2')
 
 
 dashboard_data <- read.csv("data/dashboard_data.csv", stringsAsFactors = FALSE)
-world_data <- read.csv("data/world_data.csv", stringsAsFactors = FALSE)
+world_data <-     read.csv("data/world_data.csv", stringsAsFactors = FALSE)
 indicator_data <- read.csv("data/indicator_data.csv", stringsAsFactors = FALSE)
+gdp_data <-       read.csv("data/world_gdp_per_capita.csv", stringsAsFactors = FALSE)
+
+
+country_filter <- distinct(select(dashboard_data, country_code))
+gdp_data <- country_filter %>% left_join(gdp_data, by = "country_code", all.x=TRUE)
 
 world_data$value <- round(world_data$value, 3)
 
@@ -26,6 +31,12 @@ import_export_data$country_name <- as.factor(import_export_data$country_name)
 import_export_data$indicator_name <- as.factor(import_export_data$indicator_name)
 import_export_data$region <- as.factor(import_export_data$region)
 import_export_data$metric <- as.factor(import_export_data$metric)
+
+dash_levels_filter <- import_export_data %>% filter(country_name != "World", 
+                                                   indicator_name != "Merchandise exports (current US$)",
+                                                   indicator_name != "Merchandise imports (current US$)",
+                                                   indicator_name != "Merchandise trade (% of GDP)") %>% 
+                      select(country_name, indicator_name) %>% distinct() %>% mutate(country_name = factor(country_name), indicator_name = factor(indicator_name))
 
 colourPalette <- c("#40004b","#762a83","#9970ab","#c2a5cf","#e7d4e8","#f7f7f7",
 "#d9f0d3","#a6dba0","#5aae61","#1b7837","#00441b")
@@ -54,16 +65,17 @@ ui <- dashboardPage(
                                 sidebarPanel( 
                                   sliderInput("num3", "Years to Include:",min = 1970, max = 2014,step=1,value=c(1970,2014), width = 600),
                                 selectInput("filter_country3", "Country", 
-                                            choices=levels(import_export_data$country_name),
-                                            selected=levels(import_export_data$country_name)[1]),
+                                            choices=levels(dash_levels_filter$country_name),
+                                            selected=levels(dash_levels_filter$country_name)[1]),
                                 selectInput("filter_indicator3", "Indicator", 
-                                            choices=levels(import_export_data$indicator_name),
-                                            selected=levels(import_export_data$indicator_name)[1], multiple = FALSE), 
+                                            choices=levels(dash_levels_filter$indicator_name),
+                                            selected=levels(dash_levels_filter$indicator_name)[1], multiple = FALSE), 
                                 checkboxInput("include_world1", "Include World?", value = FALSE), width = "100%"), width = 12, height = 400)),  
                        
                        column(width = 2,
                                              valueBoxOutput("progressBox", width = "100%"), 
-                                             valueBoxOutput("progressBox2", width = "100%")
+                                             valueBoxOutput("progressBox2", width = "100%"),
+                                             valueBoxOutput("progressBox3", width = "100%")
                               ),
                        column(width = 6, box(plotOutput("import_export_bar", height = 400, width = "100%"), width = "100%")) ## Bottom right
               )
@@ -175,7 +187,8 @@ server <- function(input, output) {
   
   kpi_rank_data <- reactive({
     year_indicator_data <- dashboard_data[dashboard_data$year == max(input$num3) &
-                                            dashboard_data$indicator_name == input$filter_indicator3,]
+                                          dashboard_data$indicator_name == input$filter_indicator3 &
+                                          dashboard_data$country_name != "World",]
     year_indicator_data$rank <- scales::ordinal(rank(-year_indicator_data$value))
     year_indicator_data <- year_indicator_data[year_indicator_data$country_name == input$filter_country3,]
 
@@ -188,6 +201,20 @@ server <- function(input, output) {
     )
   })
   
+  gdp_rank_data <- reactive({
+    gdp_rank <- gdp_data[gdp_data$year == max(input$num3) &
+                                      gdp_data$country_name != "World",]
+    gdp_rank$rank <- scales::ordinal(rank(-gdp_rank$value))
+    gdp_rank <- gdp_rank[gdp_rank$country_name == input$filter_country3,]
+
+  })
+  
+  output$progressBox3 <- renderValueBox({
+    valueBox(
+      gdp_rank_data()$rank, "Highest GDP per capita", icon = icon("chart-line"),
+      color = "purple"
+    )
+  })
   
   # Map plot goes here
   map_data <- reactive({
@@ -217,7 +244,7 @@ server <- function(input, output) {
     
     import_export_bar_data() %>% filter(country_name != "World") %>% mutate(value = value/1000000000) %>% 
       ggplot(aes(x=country_name, y=value, fill = scale)) +
-      geom_bar(stat ="identity", position=position_dodge()) +
+      geom_bar(stat ="identity", position=position_dodge(), color = "black") +
       ggtitle(paste0("Total Merchandise Imports & Exports in ", max(input$num3))) +
       theme_classic() +
       xlab("Country") +
