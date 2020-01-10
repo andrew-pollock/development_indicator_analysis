@@ -238,11 +238,11 @@ server <- function(input, output) {
       scale_fill_manual(values=c("#1b9e77", "#d95f02")) +
       theme(
         plot.title = element_text(size=14, face="bold"),
-        axis.title.x = element_text(size=12, face="bold"),
-        axis.title.y = element_text(size=12, face="bold"),
-        axis.text.x = element_text(size=10),
-        axis.text.y = element_text(size=10),
-        strip.text.x = element_text(size = 11, face="bold"), legend.text=element_text(size=12)
+        axis.title.x = element_text(size=13, face="bold"),
+        axis.title.y = element_text(size=13, face="bold"),
+        axis.text.x = element_text(size=12),
+        axis.text.y = element_text(size=12),
+        strip.text.y = element_text(size = 12, face="bold"), legend.text=element_text(size=12)
       ) + coord_flip()
     
   },width = "auto")
