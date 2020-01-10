@@ -179,7 +179,7 @@ server <- function(input, output) {
   
   output$progressBox2 <- renderValueBox({
     valueBox(
-      kpi_rank_data()$rank, "Highest out of 6", icon = icon("chart-line"),
+      kpi_rank_data()$rank, paste0("Highest ", gsub("\\(.+", "", kpi_data()$indicator_name)), icon = icon("chart-line"),
       color = "purple"
     )
   })
