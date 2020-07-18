@@ -41,9 +41,14 @@ long_data <- raw_data %>% gather(key = "year", value="value", -country_name, -co
 
 
 # Which years have the most missing values?
-long_data %>% group_by(year) %>% summarise(num_missing = sum(is.na(value)), perc_missing = num_missing/n()) %>% arrange(-perc_missing) %>% 
+(yearly_missing_values <- long_data %>% group_by(year) %>% summarise(num_missing = sum(is.na(value)), perc_missing = num_missing/n()) %>% arrange(-perc_missing) %>% 
   ggplot(aes(x=as.integer(year), y = perc_missing)) + 
-  geom_line() + lims(y = c(0,1)) + theme_bw()
+  geom_line() + 
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5)) +
+  ylim(0,1) +
+  labs(title = "Percentage of Data Points Missing by Year", x = "Year", y = "% of Data Missing"))
+ggsave("plots/yearly_missing_values.png", yearly_missing_values)
 # 2016 data is almost completely missing & 77% is missing from 2015, otherwise data availability slowly improves from 19060 onwards
 # We'll look at the date range from 1980 until 2014 to ensure we have the best data availability possible
 
@@ -96,9 +101,14 @@ indicator_selection <- indicator_selection %>% group_by(indicator_name) %>% summ
 
 
 # Visually inspect remaining indicators
-indicator_selection %>% group_by(year) %>% summarise(percent_missing = sum(is.na(value))/n())  %>% filter(year != "2015") %>% 
+(filtered_missing_values <- indicator_selection %>% group_by(year) %>% summarise(percent_missing = sum(is.na(value))/n())  %>% filter(year != "2015") %>% 
   ggplot(aes(x=as.integer(year), y = percent_missing)) +
-  geom_line() + theme_bw() + ylim(0,1)
+  geom_line() + 
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5)) +
+  ylim(0,1) +
+  labs(title = "Percentage of Data Points Missing After Filtering", x = "Year", y = "% of Data Missing"))
+ggsave("plots/filtered_missing_values.png", filtered_missing_values)
 
 indicator_selection %>% group_by(indicator_name) %>% summarise(percent_missing = sum(is.na(value))/n()) %>% View()
 
@@ -119,7 +129,7 @@ indicators <- c('Exports of goods and services (% of GDP)',
                 'Merchandise trade (% of GDP)',
                 'Merchandise exports (current US$)',
                 'Merchandise imports (current US$)')
-# These are all availabile for our chose countries from 1980 onwards
+# These are all available for our chose countries from 1980 onwards
 
 long_data <- long_data %>% filter(indicator_name %in% indicators)
 
@@ -130,10 +140,14 @@ long_data <- long_data %>% filter(indicator_name %in% indicators)
 final_data <- raw_data %>% gather(key = "year", value="value", -country_name, -country_code, -indicator_name, -indicator_code) %>% filter(indicator_name %in% indicators) %>% 
   filter(country_code %in% country_filter$country_code)
 
-final_data %>% group_by(year) %>% summarise(percent_missing = sum(is.na(value))/n()) %>%
+(selected_missing_values <- final_data %>% group_by(year) %>% summarise(percent_missing = sum(is.na(value))/n()) %>%
   ggplot(aes(x=as.integer(year), y=percent_missing)) + 
-  geom_line() + theme_bw() + ylim(0,1) + xlab("Year") + ggtitle("Percentage of Values Missing by Year") +
-  theme(plot.title = element_text(hjust = 0.5))
+  geom_line() + 
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = 0.5)) +
+  ylim(0,1) +
+  labs(title = "Percentage of Selected Variables Missing by Year", x = "Year", y = "% of Data Missing"))
+ggsave("plots/selected_vars_missing_values.png", selected_missing_values)
 # Our chosen data is fully available from 1970 up until 2014
 
 # To allow for the most stable period for comparisons we'll look at 1975 until 2014
