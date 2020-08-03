@@ -8,10 +8,11 @@ if(!require("tidyr")) install.packages('tidyr')
 if(!require("ggplot2")) install.packages('ggplot2')
 
 
-dashboard_data <- read.csv("data/dashboard_data.csv", stringsAsFactors = FALSE)
-world_data <-     read.csv("data/world_data.csv", stringsAsFactors = FALSE)
+## Load the data
+dashboard_data <- read.csv("data/dashboard_data.csv", stringsAsFactors = TRUE)
+world_data     <- read.csv("data/world_data.csv", stringsAsFactors = FALSE)
 indicator_data <- read.csv("data/indicator_data.csv", stringsAsFactors = FALSE)
-gdp_data <-       read.csv("data/world_gdp_per_capita.csv", stringsAsFactors = FALSE)
+gdp_data       <- read.csv("data/world_gdp_per_capita.csv", stringsAsFactors = FALSE)
 
 
 country_filter <- distinct(select(dashboard_data, country_code))
@@ -19,21 +20,16 @@ gdp_data <- country_filter %>% left_join(gdp_data, by = "country_code", all.x=TR
 
 world_data$value <- round(world_data$value, 3)
 
-import_export_data <- select(dashboard_data, -country_code)
-import_export_data <- left_join(import_export_data, indicator_data, by = "indicator_name") %>% 
-  mutate(scale = case_when(scale == "merch_imports" ~ "Merchandise Imports", TRUE ~ "Merchandise Exports"))
+import_export_data <- select(dashboard_data, -country_code) %>% left_join(import_export_data, indicator_data, by = "indicator_name") %>% 
+                        mutate(scale = case_when(scale == "merch_imports" ~ "Merchandise Imports", TRUE ~ "Merchandise Exports"))
 
 
+## Create the dataset for the Bottom-Right Merch Import/Export Bar Chart
 merch_usd_data <- import_export_data %>% filter(metric == "Merchandise") %>% mutate(region = as.character(region)) %>%
                                           mutate(region = case_when(region == "Europe & Central Asia" ~ "Europe",
                                                  region == "East Asia & Pacific" ~ "East Asia",
                                                  TRUE ~ region))
 
-
-import_export_data$country_name <- as.factor(import_export_data$country_name)
-import_export_data$indicator_name <- as.factor(import_export_data$indicator_name)
-import_export_data$region <- as.factor(import_export_data$region)
-import_export_data$metric <- as.factor(import_export_data$metric)
 
 dash_levels_filter <- import_export_data %>% filter(country_name != "World", 
                                                    indicator_name != "Merchandise exports (current US$)",
@@ -47,7 +43,7 @@ dash_levels_filter2$country_name <- factor(dash_levels_filter2$country_name, lev
 
 
 colourPalette <- c("#40004b","#762a83","#9970ab","#c2a5cf","#e7d4e8","#f7f7f7",
-"#d9f0d3","#a6dba0","#5aae61","#1b7837","#00441b")
+                   "#d9f0d3","#a6dba0","#5aae61","#1b7837","#00441b")
 
 ui <- dashboardPage(
   
