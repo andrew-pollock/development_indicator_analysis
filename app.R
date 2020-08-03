@@ -18,6 +18,8 @@ gdp_data       <- read.csv("data/world_gdp_per_capita.csv", stringsAsFactors = F
 # Filter GDP Data to just countries in dashboard_data
 gdp_data <- filter(gdp_data, country_code %in% levels(dashboard_data$country_code))
 
+
+# What is this doing?
 import_export_data <- select(dashboard_data, -country_code) %>% inner_join(indicator_data, by = "indicator_name")
 
 
@@ -28,17 +30,18 @@ merch_usd_data <- import_export_data %>% filter(metric == "Merchandise") %>% mut
                                                  TRUE ~ region))
 
 
+# creates the options list for my input box (indicator & country)
 dash_levels_filter <- import_export_data %>% filter(country_name != "World", 
                                                    indicator_name != "Merchandise exports (current US$)",
                                                    indicator_name != "Merchandise imports (current US$)",
                                                    indicator_name != "Merchandise trade (% of GDP)") %>% 
                       select(country_name, indicator_name) %>% distinct() %>% mutate(country_name = factor(country_name), indicator_name = factor(indicator_name))
 
-dash_levels_filter2 <- data.frame(country_name = c("None", as.character(dash_levels_filter$country_name))) %>% distinct() %>% 
-  mutate(country_name = factor(country_name))
-dash_levels_filter2$country_name <- factor(dash_levels_filter2$country_name, levels(dash_levels_filter2$country_name)[c(5,1,2,3,4,6,7)])
+# Creates the options for country to compare against (has "None" as an option)
+comparison_country_filter <- data.frame(country_name = factor(x = c("None", levels(dash_levels_filter$country_name)), 
+                                                        levels = c("None", "Canada", "France", "Germany", "Japan", "South Korea", "United States")))
 
-
+# Create a custom colour palette for the map
 colourPalette <- c("#40004b","#762a83","#9970ab","#c2a5cf","#e7d4e8","#f7f7f7",
                    "#d9f0d3","#a6dba0","#5aae61","#1b7837","#00441b")
 
@@ -67,8 +70,8 @@ ui <- dashboardPage(
                                            column(width = 4, checkboxInput("include_world", "Include World?", value = FALSE))),
                                   
                                   fluidRow(column(width = 8, selectInput("filter_comparison_country", "Country to Compare Against", 
-                                                                         choices=levels(dash_levels_filter2$country_name),
-                                                                         selected=levels(dash_levels_filter2$country_name)[1])),
+                                                                         choices=levels(comparison_country_filter$country_name),
+                                                                         selected=levels(comparison_country_filter$country_name)[1])),
                                            column(width = 4, checkboxInput("include_trend", "Include Trendline?", value = FALSE))),
                                  selectInput("filter_indicator", "Indicator", 
                                              choices=levels(dash_levels_filter$indicator_name),
