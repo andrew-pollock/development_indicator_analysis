@@ -19,26 +19,26 @@ gdp_data       <- read.csv("data/world_gdp_per_capita.csv", stringsAsFactors = F
 gdp_data <- filter(gdp_data, country_code %in% levels(dashboard_data$country_code))
 
 
-# What is this doing?
+# Create a new table with additional data on whether each indicator is Imports or Exports
 import_export_data <- select(dashboard_data, -country_code) %>% inner_join(indicator_data, by = "indicator_name")
 
 
 ## Create the dataset for the Bottom-Right Merch Import/Export Bar Chart
 merch_usd_data <- import_export_data %>% filter(metric == "Merchandise") %>% mutate(region = as.character(region)) %>%
                                           mutate(region = case_when(region == "Europe & Central Asia" ~ "Europe",
-                                                 region == "East Asia & Pacific" ~ "East Asia",
-                                                 TRUE ~ region))
+                                                                    region == "East Asia & Pacific" ~ "East Asia",
+                                                                    TRUE ~ region))
 
 
-# creates the options list for my input box (indicator & country)
-dash_levels_filter <- import_export_data %>% filter(country_name != "World", 
-                                                   indicator_name != "Merchandise exports (current US$)",
-                                                   indicator_name != "Merchandise imports (current US$)",
-                                                   indicator_name != "Merchandise trade (% of GDP)") %>% 
-                      select(country_name, indicator_name) %>% distinct() %>% mutate(country_name = factor(country_name), indicator_name = factor(indicator_name))
+# Create country and indicator filters for the input boxes
+country_filter   <- data.frame(country_name = factor(c("Canada", "France", "Germany", "Japan", "South Korea", "United States")))
+indicator_filter <- indicator_data %>% filter(!indicator_name %in% c("Merchandise exports (current US$)", 
+                                                                     "Merchandise imports (current US$)")) %>% 
+                        select(indicator_name) %>% mutate(indicator_name = factor(indicator_name))
+
 
 # Creates the options for country to compare against (has "None" as an option)
-comparison_country_filter <- data.frame(country_name = factor(x = c("None", levels(dash_levels_filter$country_name)), 
+comparison_country_filter <- data.frame(country_name = factor(x = c("None", levels(country_filter$country_name)), 
                                                         levels = c("None", "Canada", "France", "Germany", "Japan", "South Korea", "United States")))
 
 # Create a custom colour palette for the map
@@ -54,10 +54,11 @@ ui <- dashboardPage(
 
   dashboardBody(
       tabItem(tabName = "main_dashboard",
-              fluidRow(
+              fluidRow( # Top row, just contains 2 graphs
                 box(plotOutput("import_export_plot", height = 450, width = "100%")), ## Top left
                 box(plotOutput("map_plot", height = 450, width = "100%")), ## Top Right  (this will be the map)
               ),
+              # Bottom Row, filters in the first column, Value boxes in the second and a graph on the right side
               fluidRow(column(width = 4,
                               box(title = "Inputs", status = "primary", solidHeader = TRUE, ## Bottom Left
                                 sidebarPanel( 
@@ -65,8 +66,8 @@ ui <- dashboardPage(
                                   
                                   
                                   fluidRow(column(width = 8, selectInput("filter_country", "Country", 
-                                                                         choices=levels(dash_levels_filter$country_name),
-                                                                         selected=levels(dash_levels_filter$country_name)[1])),
+                                                                         choices=levels(country_filter$country_name),
+                                                                         selected=levels(country_filter$country_name)[1])),
                                            column(width = 4, checkboxInput("include_world", "Include World?", value = FALSE))),
                                   
                                   fluidRow(column(width = 8, selectInput("filter_comparison_country", "Country to Compare Against", 
@@ -74,19 +75,20 @@ ui <- dashboardPage(
                                                                          selected=levels(comparison_country_filter$country_name)[1])),
                                            column(width = 4, checkboxInput("include_trend", "Include Trendline?", value = FALSE))),
                                  selectInput("filter_indicator", "Indicator", 
-                                             choices=levels(dash_levels_filter$indicator_name),
-                                             selected=levels(dash_levels_filter$indicator_name)[1], multiple = FALSE) 
+                                             choices=levels(indicator_filter$indicator_name),
+                                             selected=levels(indicator_filter$indicator_name)[1], multiple = FALSE) 
                                 , width = "100%", height = 350), width = 12, height = 440)
                               
                               
                               ),  
-                       
+                       # Bottom row, Second column, contains value boxes
                        column(width = 2,
                               titlePanel(h1(strong(textOutput("country_title2"), align = "center"))),
                                              valueBoxOutput("progressBox", width = "100%"), 
                                              valueBoxOutput("progressBox2", width = "100%"),
                                              valueBoxOutput("progressBox3", width = "100%")
                               ),
+                       # Bottom row, right hand side, contains Imports vs Exports bar chart
                        column(width = 6, box(plotOutput("import_export_bar", height = 420, width = "100%"), width = "100%")) ## Bottom right
               )
       ))
