@@ -1,15 +1,15 @@
 indicator_name,metric,scale
-Agricultural raw materials imports (% of merchandise imports),Agricultural raw materials,merch_imports
-Food imports (% of merchandise imports),Food,merch_imports
-Fuel imports (% of merchandise imports),Fuel,merch_imports
-Manufactures imports (% of merchandise imports),Manufacturing,merch_imports
-Ores and metals imports (% of merchandise imports),Ores and metals,merch_imports
-Agricultural raw materials exports (% of merchandise exports),Agricultural raw materials,merch_exports
-Food exports (% of merchandise exports),Food,merch_exports
-Fuel exports (% of merchandise exports),Fuel,merch_exports
-Manufactures exports (% of merchandise exports),Manufacturing,merch_exports
-Ores and metals exports (% of merchandise exports),Ores and metals,merch_exports
-Merchandise imports (current US$),Merchandise,merch_imports
-Merchandise exports (current US$),Merchandise,merch_exports
-Exports of goods and services (% of GDP),Goods and Services,merch_exports
-Imports of goods and services (% of GDP),Goods and Services,merch_imports
+Agricultural raw materials imports (% of merchandise imports),Agricultural raw materials,Merchandise Imports
+Food imports (% of merchandise imports),Food,Merchandise Imports
+Fuel imports (% of merchandise imports),Fuel,Merchandise Imports
+Manufactures imports (% of merchandise imports),Manufacturing,Merchandise Imports
+Ores and metals imports (% of merchandise imports),Ores and metals,Merchandise Imports
+Agricultural raw materials exports (% of merchandise exports),Agricultural raw materials,Merchandise Exports
+Food exports (% of merchandise exports),Food,Merchandise Exports
+Fuel exports (% of merchandise exports),Fuel,Merchandise Exports
+Manufactures exports (% of merchandise exports),Manufacturing,Merchandise Exports
+Ores and metals exports (% of merchandise exports),Ores and metals,Merchandise Exports
+Merchandise imports (current US$),Merchandise,Merchandise Imports
+Merchandise exports (current US$),Merchandise,Merchandise Exports
+Exports of goods and services (% of GDP),Goods and Services,Merchandise Exports
+Imports of goods and services (% of GDP),Goods and Services,Merchandise Imports

@@ -18,8 +18,7 @@ gdp_data       <- read.csv("data/world_gdp_per_capita.csv", stringsAsFactors = F
 # Filter GDP Data to just countries in dashboard_data
 gdp_data <- filter(gdp_data, country_code %in% levels(dashboard_data$country_code))
 
-import_export_data <- select(dashboard_data, -country_code) %>% left_join(indicator_data, by = "indicator_name") %>% 
-                        mutate(scale = case_when(scale == "merch_imports" ~ "Merchandise Imports", TRUE ~ "Merchandise Exports"))
+import_export_data <- select(dashboard_data, -country_code) %>% inner_join(indicator_data, by = "indicator_name")
 
 
 ## Create the dataset for the Bottom-Right Merch Import/Export Bar Chart
