@@ -15,12 +15,10 @@ indicator_data <- read.csv("data/indicator_data.csv", stringsAsFactors = FALSE)
 gdp_data       <- read.csv("data/world_gdp_per_capita.csv", stringsAsFactors = FALSE)
 
 
-country_filter <- distinct(select(dashboard_data, country_code))
-gdp_data <- country_filter %>% left_join(gdp_data, by = "country_code", all.x=TRUE)
+# Filter GDP Data to just countries in dashboard_data
+gdp_data <- filter(gdp_data, country_code %in% levels(dashboard_data$country_code))
 
-world_data$value <- round(world_data$value, 3)
-
-import_export_data <- select(dashboard_data, -country_code) %>% left_join(import_export_data, indicator_data, by = "indicator_name") %>% 
+import_export_data <- select(dashboard_data, -country_code) %>% left_join(indicator_data, by = "indicator_name") %>% 
                         mutate(scale = case_when(scale == "merch_imports" ~ "Merchandise Imports", TRUE ~ "Merchandise Exports"))
 
 
