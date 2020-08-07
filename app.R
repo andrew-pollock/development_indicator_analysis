@@ -64,7 +64,6 @@ ui <- dashboardPage(
                                 sidebarPanel( 
                                   sliderInput("num3", "Years to Include:",min = 1970, max = 2019,step=1,value=c(1970,2014), width = 600),
                                   
-                                  
                                   fluidRow(column(width = 8, selectInput("filter_country", "Country", 
                                                                          choices=levels(country_filter$country_name),
                                                                          selected=levels(country_filter$country_name)[1])),
@@ -98,33 +97,33 @@ ui <- dashboardPage(
 
 server <- function(input, output) { 
 
+  # Top left data
   import_export_plot_data <- reactive({
     metric <- import_export_data[import_export_data$indicator_name == input$filter_indicator, 6][1]
     
     output_data <- import_export_data[import_export_data$year %in% seq(from=min(input$num3),to=max(input$num3),by=1) &
-                                 (import_export_data$country_name == input$filter_country  | 
-                                  (import_export_data$country_name == "World" & input$include_world == TRUE) |
-                                  import_export_data$country_name == input$filter_comparison_country) &
-                                 import_export_data$metric == metric &
-                                 !is.na(import_export_data$metric),]
-  })
+                                        (import_export_data$country_name == input$filter_country  | 
+                                           (import_export_data$country_name == "World" & input$include_world == TRUE) |
+                                           import_export_data$country_name == input$filter_comparison_country) &
+                                        import_export_data$metric == metric &
+                                        !is.na(import_export_data$metric),]})
   
+  # Create the overall dashboard title
   output$country_title <- renderText({ paste0(as.character(import_export_plot_data()$country_name[1]), 
                                               " Merchandise Imports & Exports from ",
                                               as.character(min(input$num3)), 
                                               " to ",
-                                              as.character(pmin(max(input$num3), 2014))
-                                              ) })
+                                              as.character(pmin(max(input$num3), 2014)))})
   
+  # Create the title and year for the Value Boxes
   output$country_title2 <- renderText({ paste0(as.character(import_export_plot_data()$country_name[1]), 
-                                              " ", as.character(pmin(max(input$num3), 2014))
+                                               " ", as.character(pmin(max(input$num3), 2014))
   ) })
   
-  
+  # Top left plot
   output$import_export_plot <- renderPlot({
     
-    ggplot(import_export_plot_data(),aes(x=as.numeric(year),y=value, #color=scale, 
-                                         color=country_name)) +
+    ggplot(import_export_plot_data(),aes(x=as.numeric(year), y=value, color=country_name)) +
       geom_line(size=1.5) +
       labs(x = "Year", y = paste0(as.character(import_export_plot_data()$metric), " Imports & Exports")) +
       xlim(min(input$num3), max(input$num3)) +
@@ -133,29 +132,29 @@ server <- function(input, output) {
       scale_y_continuous(labels = scales::percent_format(accuracy = 0.1)) +
       scale_color_manual(values=c("#1f78b4", "#b2df8a", "#a6cee3"), 
                          guide = if(!input$include_world & input$filter_comparison_country == "None") 'none' else "legend" ) +
-      theme(legend.position = "none") +
       scale_linetype_discrete(name = "Country", guide = if(!input$include_world) 'none' else "legend") +
       theme(
+        legend.position = "bottom", legend.key.width=unit(2.5, "line"), 
+        legend.text=element_text(size=12), legend.title=element_blank(),
         plot.title = element_text(size=14, face="bold"),
         axis.title.x = element_text(size=12, face="bold"),
         axis.title.y = element_text(size=12, face="bold"),
         axis.text.x = element_text(size=10),
         axis.text.y = element_text(size=10),
-        strip.text.x = element_text(size = 11, face="bold"), legend.text=element_text(size=12),
-        legend.justification = "centre", legend.position = "bottom", legend.key.width=unit(2.5, "line"), legend.title=element_blank()
+        strip.text.x = element_text(size = 11, face="bold")
       ) +
       {if(input$include_trend)stat_smooth(method="glm", formula = y ~ splines::bs(x, 3), fullrange=TRUE, se = FALSE, 
                                           linetype = "dashed", aes(group = country_name), show.legend = FALSE)}
-
-    
   },width = "auto")
   
+  # Subset the data for the value boxes
   kpi_data <- reactive({
     output_data <- dashboard_data[dashboard_data$year == pmin(max(input$num3), 2014) & 
                                     (dashboard_data$country_name == input$filter_country) &
                                     dashboard_data$indicator_name == input$filter_indicator,]
   })
   
+  # Value box 1 - KPI Value
   output$progressBox <- renderValueBox({
     valueBox(
       paste0(kpi_data()$value*100, "%"), 
@@ -165,15 +164,16 @@ server <- function(input, output) {
     )
   })
   
+  # Create the KPI ranks for value box 2
   kpi_rank_data <- reactive({
     year_indicator_data <- dashboard_data[dashboard_data$year == pmin(max(input$num3), 2014) &
-                                          dashboard_data$indicator_name == input$filter_indicator &
-                                          dashboard_data$country_name != "World",]
+                                            dashboard_data$indicator_name == input$filter_indicator &
+                                            dashboard_data$country_name != "World",]
     year_indicator_data$rank <- scales::ordinal(rank(-year_indicator_data$value))
     year_indicator_data <- year_indicator_data[year_indicator_data$country_name == input$filter_country,]
-
   })
   
+  # Value box 2 - KPI Rank
   output$progressBox2 <- renderValueBox({
     valueBox(
       kpi_rank_data()$rank, paste0("Highest ", gsub("\\(.+", "", kpi_data()$indicator_name)), icon = icon("chart-line"),
@@ -181,14 +181,16 @@ server <- function(input, output) {
     )
   })
   
+  # Create the GDP ranks for value box 3
   gdp_rank_data <- reactive({
     gdp_rank <- gdp_data[gdp_data$year == pmin(max(input$num3), 2014) &
-                                      gdp_data$country_name != "World",]
+                           gdp_data$country_name != "World",]
     gdp_rank$rank <- scales::ordinal(rank(-gdp_rank$value))
     gdp_rank <- gdp_rank[gdp_rank$country_name == input$filter_country,]
-
+    
   })
   
+  # Value box 3 - GDP rank
   output$progressBox3 <- renderValueBox({
     valueBox(
       gdp_rank_data()$rank, "Highest GDP per capita", icon = icon("dollar-sign"),
@@ -196,12 +198,13 @@ server <- function(input, output) {
     )
   })
   
-  # Map plot goes here
+  # Map plot data
   map_data <- reactive({
     output_data <- world_data[world_data$year == pmin(max(input$num3), 2014) & 
-                              world_data$indicator_name == input$filter_indicator,]
+                                world_data$indicator_name == input$filter_indicator,]
   })
   
+  # Map plot
   output$map_plot <- renderPlot({
     par(mar=c(0, 0, 1, 0), pty = "m",xaxs = "r", xaxt = 's', xpd = NA, yaxs = "i", yaxt = 's')
     mapCountryData(joinCountryData2Map(map_data(),
@@ -211,15 +214,15 @@ server <- function(input, output) {
                    nameColumnToPlot="value",
                    colourPalette=colourPalette, numCats = 11,
                    mapTitle= paste0(map_data()$year[1], " ", map_data()$indicator_name[1])
-                )
-    
+    )
   },width = "auto")
   
-  
+  # Import-Export plot data
   import_export_bar_data <- reactive({
     output_data <- merch_usd_data[merch_usd_data$year == pmin(max(input$num3), 2014),]
   })
   
+  # Import-Export plot
   output$import_export_bar <- renderPlot({
     import_export_bar_data() %>% filter(country_name != "World") %>% mutate(value = value/1000000000) %>% 
       ggplot(aes(x=country_name, y=value, fill = scale)) +
