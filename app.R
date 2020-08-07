@@ -126,8 +126,7 @@ server <- function(input, output) {
     ggplot(import_export_plot_data(),aes(x=as.numeric(year),y=value, #color=scale, 
                                          color=country_name)) +
       geom_line(size=1.5) +
-      ylab(paste0(as.character(import_export_plot_data()$metric), " Imports & Exports")) + 
-      xlab("Year") +
+      labs(x = "Year", y = paste0(as.character(import_export_plot_data()$metric), " Imports & Exports")) +
       xlim(min(input$num3), max(input$num3)) +
       theme_classic() +
       facet_wrap(~scale, scales = "free_y") +
@@ -222,29 +221,27 @@ server <- function(input, output) {
   })
   
   output$import_export_bar <- renderPlot({
-    
     import_export_bar_data() %>% filter(country_name != "World") %>% mutate(value = value/1000000000) %>% 
       ggplot(aes(x=country_name, y=value, fill = scale)) +
       geom_bar(stat ="identity", position=position_dodge(), color = "black") +
-      ggtitle(paste0("Total Merchandise Imports & Exports in ", pmin(max(input$num3), 2014))) +
       theme_classic() +
-      xlab("Country") +
+      labs(title = paste0("Total Merchandise Imports & Exports in ", pmin(max(input$num3), 2014)),
+           x = "Country", y = "Current US Dollars (in Billions)") +
       facet_grid(region~., scales = "free_y") +
-      ylab("Current US Dollars (in Billions)") +
       scale_y_continuous(labels = scales::dollar_format(prefix="$", suffix = "B")) +
-      theme(legend.justification = "centre", legend.position = "top", plot.title = element_text(hjust = 0.5), legend.title = element_blank()) +
       scale_fill_manual(values=c("#1b9e77", "#d95f02")) +
       theme(
-        plot.title = element_text(size=14, face="bold"),
+        legend.justification = "centre", legend.position = "top", legend.title = element_blank(),
+        plot.title   = element_text(size=14, face="bold", hjust = 0.5),
         axis.title.x = element_text(size=13, face="bold"),
         axis.title.y = element_text(size=13, face="bold"),
-        axis.text.x = element_text(size=12),
-        axis.text.y = element_text(size=12),
-        strip.text.y = element_text(size = 12, face="bold"), legend.text=element_text(size=12)
-      ) + coord_flip()
-    
+        axis.text.x  = element_text(size=12),
+        axis.text.y  = element_text(size=12),
+        strip.text.y = element_text(size=12, face="bold"), legend.text=element_text(size=12)) + 
+      coord_flip()
   },width = "auto")
   
 }
+
 
 shinyApp(ui, server)
